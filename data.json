@@ -72,7 +72,7 @@
       "thirds": {
         "A": "Czechia",
         "B": "Bosnia-Herzegovina",
-        "D": "TÃÂ¼rkiye",
+        "D": "TÃÂÃÂ¼rkiye",
         "E": "Ecuador",
         "I": "Norway",
         "H": "Saudi Arabia",
@@ -98,7 +98,7 @@
         ],
         "D": [
           "USA",
-          "TÃ¼rkiye"
+          "TÃÂ¼rkiye"
         ],
         "E": [
           "Ecuador",
@@ -161,7 +161,7 @@
           "Morocco"
         ],
         "D": [
-          "Türkiye",
+          "TÃ¼rkiye",
           "USA"
         ],
         "E": [
@@ -207,6 +207,70 @@
         "H": "",
         "I": "Senegal",
         "J": "Algeria"
+      },
+      "ko": {},
+      "tw": ""
+    },
+    "Khaled": {
+      "qual": {
+        "A": [
+          "South Korea",
+          "Czechia"
+        ],
+        "B": [
+          "Bosnia-Herzegovina",
+          "Switzerland"
+        ],
+        "C": [
+          "Brazil",
+          "Morocco"
+        ],
+        "D": [
+          "Australia",
+          "Türkiye"
+        ],
+        "E": [
+          "Germany",
+          "Ecuador"
+        ],
+        "F": [
+          "Netherlands",
+          "Japan"
+        ],
+        "G": [
+          "Belgium",
+          "Iran"
+        ],
+        "H": [
+          "Spain",
+          "Uruguay"
+        ],
+        "I": [
+          "France",
+          "Senegal"
+        ],
+        "J": [
+          "Argentina",
+          "Austria"
+        ],
+        "K": [
+          "Portugal",
+          "Colombia"
+        ],
+        "L": [
+          "England",
+          "Croatia"
+        ]
+      },
+      "thirds": {
+        "A": "Mexico",
+        "B": "Qatar",
+        "C": "Scotland",
+        "D": "USA",
+        "E": "Ivory Coast",
+        "F": "Sweden",
+        "G": "Egypt",
+        "H": "Saudi Arabia"
       },
       "ko": {},
       "tw": ""
