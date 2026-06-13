@@ -1,5 +1,17 @@
 {
-  "players": [],
+  "players": [
+    "Malek",
+    "Adnan",
+    "Mahmoud",
+    "Khaled",
+    "Belal",
+    "Louay",
+    "Omar",
+    "Samer",
+    "Hussein",
+    "Ayman",
+    "Mohamad"
+  ],
   "unlocked": false,
   "qualActual": {},
   "thirdsActual": [],
