@@ -72,12 +72,76 @@
       "thirds": {
         "A": "Czechia",
         "B": "Bosnia-Herzegovina",
-        "D": "Türkiye",
+        "D": "TÃ¼rkiye",
         "E": "Ecuador",
         "I": "Norway",
         "H": "Saudi Arabia",
         "G": "Egypt",
         "F": "Tunisia"
+      },
+      "ko": {},
+      "tw": ""
+    },
+    "Malek": {
+      "qual": {
+        "A": [
+          "South Korea",
+          "Mexico"
+        ],
+        "B": [
+          "Canada",
+          "Switzerland"
+        ],
+        "C": [
+          "Brazil",
+          "Morocco"
+        ],
+        "D": [
+          "USA",
+          "Türkiye"
+        ],
+        "E": [
+          "Ecuador",
+          "Germany"
+        ],
+        "F": [
+          "Netherlands",
+          "Japan"
+        ],
+        "G": [
+          "Belgium",
+          "Egypt"
+        ],
+        "H": [
+          "Spain",
+          "Uruguay"
+        ],
+        "I": [
+          "France",
+          "Norway"
+        ],
+        "J": [
+          "Argentina",
+          "Algeria"
+        ],
+        "K": [
+          "Portugal",
+          "Colombia"
+        ],
+        "L": [
+          "Croatia",
+          "England"
+        ]
+      },
+      "thirds": {
+        "E": "Ivory Coast",
+        "B": "Bosnia-Herzegovina",
+        "A": "Czechia",
+        "F": "Sweden",
+        "I": "Senegal",
+        "L": "Ghana",
+        "D": "Paraguay",
+        "C": "Scotland"
       },
       "ko": {},
       "tw": ""
