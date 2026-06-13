@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>WC 2026 Predictions</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#1a6b3c;--green-mid:#2e8b57;--green-light:#d4edda;
+  --gold:#c9a84c;--gold-light:#fff8e7;
+  --red:#c0392b;--purple:#5b21b6;--purple-light:#ede9fe;
+  --gray-dark:#2c2c2a;--gray-mid:#888780;--gray-light:#f1efe8;
+  --shadow:0 2px 12px rgba(0,0,0,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:#0f2a1a;min-height:100vh;color:var(--gray-dark);-webkit-text-size-adjust:100%;}
+
+header{background:linear-gradient(135deg,#0a1f12,#1a6b3c 60%,#0f3d22);padding:1.25rem 1rem 1rem;text-align:center;border-bottom:3px solid var(--gold);position:relative;overflow:hidden;}
+header::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 30px,rgba(255,255,255,.02) 30px,rgba(255,255,255,.02) 60px);}
+.header-badge{display:inline-block;background:var(--gold);color:#3a2600;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:3px 12px;border-radius:20px;margin-bottom:.4rem;}
+header h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.8rem,8vw,3.5rem);color:#fff;letter-spacing:2px;line-height:1;margin-bottom:.2rem;}
+header h1 span{color:var(--gold);}
+header p{color:rgba(255,255,255,.65);font-size:.82rem;}
+.player-badge{display:inline-block;background:rgba(201,168,76,.2);border:1px solid var(--gold);color:var(--gold);font-size:.78rem;font-weight:600;padding:3px 12px;border-radius:20px;margin-top:.4rem;}
+
+nav{background:#122a1c;display:flex;justify-content:center;gap:4px;padding:.5rem .75rem;border-bottom:1px solid rgba(255,255,255,.08);flex-wrap:wrap;}
+nav button{background:transparent;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);padding:.35rem .75rem;border-radius:6px;font-family:'Inter',sans-serif;font-size:.75rem;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;-webkit-tap-highlight-color:transparent;}
+nav button:active,nav button:hover{background:rgba(255,255,255,.1);color:#fff;}
+nav button.active{background:var(--green);border-color:var(--green);color:#fff;}
+nav button.locked{opacity:.45;cursor:default;}
+
+main{max-width:960px;margin:0 auto;padding:1.25rem .9rem 5rem;}
+.panel{display:none;}.panel.active{display:block;}
+
+.card{background:#fff;border-radius:12px;padding:1.25rem;box-shadow:var(--shadow);}
+.sec-hdr{display:flex;align-items:center;gap:8px;margin-bottom:.9rem;flex-wrap:wrap;}
+.sec-hdr h2{font-family:'Bebas Neue',sans-serif;font-size:1.35rem;color:#fff;letter-spacing:1px;}
+.pill{background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);border-radius:20px;padding:2px 10px;font-size:.7rem;flex-shrink:0;}
+.sub-text{color:rgba(255,255,255,.55);font-size:.8rem;margin-bottom:1.1rem;line-height:1.5;}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:.6rem 1.1rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:600;font-size:.85rem;cursor:pointer;border:none;transition:all .15s;-webkit-tap-highlight-color:transparent;}
+.btn-green{background:var(--green);color:#fff;}.btn-green:active{background:#155a31;}
+.btn-gold{background:var(--gold);color:#3a2600;}.btn-gold:active{background:#b8952e;}
+.btn-red{background:var(--red);color:#fff;}
+.btn-gray{background:#888;color:#fff;}
+.btn-full{width:100%;}
+
+/* LOADING */
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 1rem;gap:1rem;}
+.spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-screen p{color:rgba(255,255,255,.6);font-size:.9rem;}
+
+/* HOME / PLAYER SELECT */
+.home-card{max-width:480px;margin:0 auto;background:#fff;border-radius:16px;padding:1.75rem;box-shadow:var(--shadow);}
+.home-card h2{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--green);letter-spacing:1px;margin-bottom:.25rem;}
+.home-card p{font-size:.82rem;color:var(--gray-mid);margin-bottom:1.25rem;line-height:1.5;}
+.player-select-list{display:flex;flex-direction:column;gap:8px;margin-bottom:1.25rem;}
+.player-select-btn{display:flex;align-items:center;gap:10px;padding:.75rem 1rem;border:1.5px solid #e0dfd8;border-radius:10px;background:#fff;cursor:pointer;font-family:'Inter',sans-serif;font-size:.92rem;font-weight:600;color:var(--gray-dark);transition:all .15s;-webkit-tap-highlight-color:transparent;}
+.player-select-btn:active,.player-select-btn:hover{border-color:var(--green);background:var(--green-light);}
+.player-select-btn .avatar{width:32px;height:32px;border-radius:50%;background:var(--green);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.player-select-btn .status-tag{margin-left:auto;font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:10px;}
+.status-submitted{background:#d4edda;color:#1a6b3c;}
+.status-pending{background:#fff8e7;color:#856404;}
+.admin-link{text-align:center;margin-top:.75rem;}
+.admin-link button{background:none;border:none;color:var(--gray-mid);font-size:.75rem;cursor:pointer;text-decoration:underline;font-family:'Inter',sans-serif;}
+
+/* ADMIN LOGIN */
+.login-card{max-width:380px;margin:0 auto;background:#fff;border-radius:16px;padding:1.75rem;box-shadow:var(--shadow);text-align:center;}
+.login-card h2{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--red);letter-spacing:1px;margin-bottom:.25rem;}
+.login-card p{font-size:.8rem;color:var(--gray-mid);margin-bottom:1.1rem;}
+.login-card input{width:100%;padding:10px 14px;border:1.5px solid #d0d0cc;border-radius:8px;font-family:'Inter',sans-serif;font-size:1rem;text-align:center;letter-spacing:3px;margin-bottom:.75rem;}
+.login-card input:focus{outline:none;border-color:var(--red);}
+#login-error{font-size:.8rem;color:var(--red);margin-top:.4rem;}
+
+/* ADMIN */
+.setup-card{max-width:620px;margin:0 auto;}
+.setup-card h2{font-family:'Bebas Neue',sans-serif;font-size:1.45rem;color:var(--green);letter-spacing:1px;margin-bottom:.15rem;}
+.setup-card .sub{font-size:.8rem;color:var(--gray-mid);margin-bottom:1.1rem;}
+.player-list{display:flex;flex-direction:column;gap:7px;margin-bottom:1.1rem;}
+.player-row{display:flex;align-items:center;gap:8px;}
+.player-num{width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.player-row input{flex:1;padding:8px 11px;border:1px solid #d0d0cc;border-radius:7px;font-family:'Inter',sans-serif;font-size:.9rem;color:var(--gray-dark);}
+.player-row input:focus{outline:none;border-color:var(--green);}
+
+.unlock-row{display:flex;align-items:center;gap:10px;margin-top:1.1rem;padding:.75rem 1rem;background:#fff8e7;border:1px solid var(--gold);border-radius:10px;}
+.unlock-row label{font-size:.82rem;font-weight:600;color:#5a3e00;flex:1;}
+.toggle-switch{position:relative;width:44px;height:24px;flex-shrink:0;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;cursor:pointer;inset:0;background:#ccc;border-radius:24px;transition:.3s;}
+.toggle-slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s;}
+.toggle-switch input:checked+.toggle-slider{background:var(--green);}
+.toggle-switch input:checked+.toggle-slider:before{transform:translateX(20px);}
+
+.save-status{margin-top:.6rem;font-size:.8rem;font-weight:600;text-align:center;}
+
+/* LEADERBOARD */
+.lb-hdr{background:#fff;border-radius:12px;padding:1.1rem 1.25rem;box-shadow:var(--shadow);margin-bottom:1.1rem;}
+.lb-hdr h2{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--green);letter-spacing:1px;}
+.lb-hdr p{font-size:.78rem;color:var(--gray-mid);}
+.pts-legend{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.55rem;}
+.legend-chip{background:var(--gray-light);border-radius:20px;padding:2px 10px;font-size:.7rem;color:var(--gray-mid);font-weight:500;}
+.legend-chip span{color:var(--gray-dark);font-weight:700;}
+.lb-table{background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:400px;}
+thead th{background:var(--green);color:#fff;font-size:.72rem;font-weight:600;padding:9px 8px;text-align:center;white-space:nowrap;}
+thead th:nth-child(2){text-align:left;padding-left:.9rem;}
+tbody tr{border-bottom:1px solid #f0efe8;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:#f7f6f2;}
+tbody td{padding:8px 8px;font-size:.82rem;text-align:center;}
+tbody td:nth-child(2){text-align:left;}
+.rank-badge{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-weight:700;font-size:.76rem;}
+.rank-1{background:#ffd700;color:#5a3e00;}.rank-2{background:#c0c0c0;color:#3a3a3a;}.rank-3{background:#cd7f32;color:#fff;}.rank-other{background:var(--gray-light);color:var(--gray-mid);}
+.player-name-cell{font-weight:600;color:var(--gray-dark);}
+.total-pts{font-weight:700;color:var(--green);}
+
+/* ADMIN QUAL/KO/TW */
+.qual-section{background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:1.1rem;}
+.qual-hdr{background:var(--green);color:#fff;padding:.6rem 1rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.qual-hdr h3{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:1px;}
+.qual-hdr .teams-badge{background:rgba(255,255,255,.2);border-radius:10px;padding:1px 9px;font-size:.68rem;word-break:break-word;}
+.qual-body{padding:.75rem 1rem;}
+.qual-actual-row{display:flex;align-items:center;gap:7px;margin-bottom:.65rem;padding-bottom:.65rem;border-bottom:1px solid #f0efe8;flex-wrap:wrap;}
+.qual-actual-label{font-size:.67rem;font-weight:700;color:var(--gold);text-transform:uppercase;width:82px;flex-shrink:0;}
+.qual-actual-picks{display:flex;gap:7px;flex:1;flex-wrap:wrap;}
+.qual-actual-picks select{padding:5px 7px;border:1.5px solid var(--gold);border-radius:6px;font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;color:var(--gray-dark);background:var(--gold-light);min-width:110px;flex:1;}
+.qual-player-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;flex-wrap:wrap;}
+.qual-player-label{font-size:.7rem;font-weight:600;color:var(--gray-mid);width:82px;flex-shrink:0;}
+.qual-picks{display:flex;gap:7px;flex:1;flex-wrap:wrap;}
+.qual-picks select{padding:5px 7px;border:1px solid #e0dfd8;border-radius:6px;font-family:'Inter',sans-serif;font-size:.76rem;color:var(--gray-dark);background:#fff;min-width:110px;flex:1;}
+.qual-picks select.correct{border-color:#2e8b57;background:#f0faf4;color:#1a6b3c;font-weight:600;}
+.qual-picks select.wrong{border-color:#e53935;background:#fff5f5;color:#c62828;}
+.thirds-actual{background:var(--purple-light);border-radius:8px;padding:.75rem .9rem;margin-bottom:.9rem;}
+.thirds-actual-label{font-size:.67rem;font-weight:700;color:var(--purple);text-transform:uppercase;margin-bottom:.45rem;}
+.thirds-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;}
+.thirds-chip-select{padding:5px 8px;border:1.5px solid var(--purple);border-radius:6px;font-family:'Inter',sans-serif;font-size:.76rem;font-weight:600;color:var(--purple);background:#fff;width:100%;}
+.thirds-player-block{border-bottom:1px solid #f0efe8;padding:.5rem 0;}
+.thirds-player-block:last-child{border-bottom:none;}
+.thirds-player-name{font-size:.75rem;font-weight:700;color:var(--gray-dark);margin-bottom:.3rem;}
+.thirds-pick-select{padding:5px 7px;border:1px solid #e0dfd8;border-radius:6px;font-family:'Inter',sans-serif;font-size:.73rem;color:var(--gray-dark);background:#fff;width:100%;}
+.thirds-pick-select.correct{border-color:#2e8b57;background:#f0faf4;color:#1a6b3c;font-weight:600;}
+.thirds-pick-select.wrong{border-color:#e53935;background:#fff5f5;color:#c62828;}
+.ko-subtabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:.9rem;}
+.ko-subtab{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);padding:.3rem .75rem;border-radius:20px;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .15s;}
+.ko-subtab.r32.active{background:#c0392b;border-color:#c0392b;color:#fff;}
+.ko-subtab.r16.active{background:#e67e22;border-color:#e67e22;color:#fff;}
+.ko-subtab.qf.active{background:#8b1a1a;border-color:#8b1a1a;color:#fff;}
+.ko-subtab.sf.active{background:#5b21b6;border-color:#5b21b6;color:#fff;}
+.ko-subtab.tp.active{background:#555;border-color:#555;color:#fff;}
+.ko-subtab.f.active{background:var(--gold);border-color:var(--gold);color:#3a2600;}
+.match-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px;}
+.match-card{background:#fff;border-radius:10px;padding:.85rem .9rem;box-shadow:var(--shadow);border-left:4px solid #ccc;}
+.match-card.ko-r32{border-left-color:#c0392b;}.match-card.ko-r16{border-left-color:#e67e22;}
+.match-card.ko-qf{border-left-color:#8b1a1a;}.match-card.ko-sf{border-left-color:#5b21b6;}
+.match-card.ko-tp{border-left-color:#888;}.match-card.ko-f{border-left-color:var(--gold);}
+.match-round-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;}
+.pred-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;}
+.pred-player{font-size:.7rem;font-weight:600;color:var(--gray-mid);width:68px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pred-select{flex:1;padding:5px 6px;border:1px solid #e0dfd8;border-radius:6px;font-family:'Inter',sans-serif;font-size:.76rem;color:var(--gray-dark);background:#fff;}
+.pred-select.correct{border-color:#2e8b57;background:#f0faf4;color:#1a6b3c;font-weight:600;}
+.pred-select.wrong{border-color:#e53935;background:#fff5f5;color:#c62828;}
+.actual-row{margin-top:8px;padding-top:8px;border-top:1px solid #f0efe8;display:flex;align-items:center;gap:7px;}
+.actual-label{font-size:.65rem;font-weight:700;color:var(--gold);text-transform:uppercase;width:68px;flex-shrink:0;}
+.actual-select{flex:1;padding:5px 6px;border:1.5px solid var(--gold);border-radius:6px;font-family:'Inter',sans-serif;font-size:.76rem;font-weight:600;color:var(--gray-dark);background:var(--gold-light);}
+.tw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:1.1rem;}
+.tw-card{background:#fff;border-radius:10px;padding:.9rem;box-shadow:var(--shadow);}
+.tw-player{font-weight:700;font-size:.85rem;color:var(--gray-dark);margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+.tw-avatar{width:26px;height:26px;border-radius:50%;background:var(--green-light);color:var(--green);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;}
+.tw-select{width:100%;padding:6px 9px;border:1px solid #e0dfd8;border-radius:7px;font-family:'Inter',sans-serif;font-size:.82rem;color:var(--gray-dark);background:#fff;}
+.tw-select.correct{border-color:#2e8b57;background:#f0faf4;color:#1a6b3c;font-weight:600;}
+.tw-select.wrong{border-color:#e53935;background:#fff5f5;color:#c62828;}
+.tw-points{margin-top:4px;font-size:.73rem;text-align:right;}
+.tw-actual-wrap{background:#fff;border-radius:12px;padding:1.2rem;box-shadow:var(--shadow);max-width:400px;margin:0 auto 1.1rem;text-align:center;}
+.tw-actual-wrap h3{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;color:var(--gold);letter-spacing:1px;margin-bottom:.35rem;}
+.tw-actual-wrap p{font-size:.78rem;color:var(--gray-mid);margin-bottom:.8rem;}
+.tw-actual-select{width:100%;padding:9px 12px;border:2px solid var(--gold);border-radius:8px;font-family:'Inter',sans-serif;font-size:.92rem;font-weight:600;color:var(--gray-dark);background:var(--gold-light);}
+
+/* PLAYER FORMS */
+.player-intro{background:#fff;border-radius:12px;padding:1.25rem;box-shadow:var(--shadow);margin-bottom:1.1rem;text-align:center;}
+.player-intro h2{font-family:'Bebas Neue',sans-serif;font-size:1.45rem;color:var(--green);letter-spacing:1px;margin-bottom:.25rem;}
+.player-intro p{font-size:.8rem;color:var(--gray-mid);margin-bottom:.85rem;}
+.progress-bar-wrap{background:#e8e8e4;border-radius:20px;height:7px;margin:.4rem 0;}
+.progress-bar{border-radius:20px;height:7px;transition:width .4s;}
+.progress-label{font-size:.72rem;color:var(--gray-mid);text-align:right;margin-top:2px;}
+.player-section{background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:1.1rem;}
+.player-section-hdr{padding:.65rem 1rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.player-section-hdr.green{background:var(--green);}
+.player-section-hdr.purple{background:var(--purple);}
+.player-section-hdr.gold{background:var(--gold);}
+.player-section-hdr h3{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;color:#fff;letter-spacing:1px;}
+.player-section-hdr .badge{background:rgba(255,255,255,.25);border-radius:10px;padding:1px 8px;font-size:.67rem;color:#fff;}
+.player-section-body{padding:.85rem 1rem;}
+.player-qual-picks{display:flex;gap:9px;flex-wrap:wrap;margin-top:.45rem;}
+.player-qual-pick{flex:1;min-width:130px;padding:9px 10px;border:1.5px solid #d0d0cc;border-radius:8px;font-family:'Inter',sans-serif;font-size:.85rem;color:var(--gray-dark);background:#fff;}
+.player-qual-pick:focus{outline:none;border-color:var(--green);}
+/* 3rds buttons */
+.thirds-group-block{background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:1rem;}
+.thirds-group-hdr{background:var(--purple);padding:.6rem 1rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.thirds-group-hdr h3{font-family:'Bebas Neue',sans-serif;font-size:1.05rem;color:#fff;letter-spacing:1px;}
+.thirds-group-hdr .badge{background:rgba(255,255,255,.25);border-radius:10px;padding:1px 8px;font-size:.67rem;color:#fff;}
+.thirds-group-body{padding:.75rem 1rem;}
+.thirds-team-btns{display:flex;flex-wrap:wrap;gap:7px;}
+.thirds-team-btn{padding:.45rem .9rem;border-radius:20px;font-family:'Inter',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;border:1.5px solid #d0d0cc;background:#fff;color:var(--gray-dark);transition:all .15s;-webkit-tap-highlight-color:transparent;}
+.thirds-team-btn:active:not(:disabled){border-color:var(--purple);color:var(--purple);}
+.thirds-team-btn.selected{background:var(--purple);border-color:var(--purple);color:#fff;}
+.thirds-team-btn.qualifier{opacity:.3;cursor:not-allowed;text-decoration:line-through;}
+.thirds-team-btn.cap-locked{opacity:.3;cursor:not-allowed;}
+.locked-msg{background:#fff;border-radius:12px;padding:2rem 1.25rem;box-shadow:var(--shadow);text-align:center;}
+.locked-msg .lock-icon{font-size:2.5rem;margin-bottom:.6rem;}
+.locked-msg h3{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--gray-mid);letter-spacing:1px;margin-bottom:.3rem;}
+.locked-msg p{font-size:.82rem;color:var(--gray-mid);}
+
+/* SUBMIT */
+.submit-card{background:#fff;border-radius:12px;padding:1.5rem;box-shadow:var(--shadow);}
+.submit-card h3{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--green);letter-spacing:1px;margin-bottom:.25rem;}
+.submit-card p{font-size:.8rem;color:var(--gray-mid);margin-bottom:1rem;line-height:1.45;}
+.val-error{background:#fff0f0;border:1px solid #e53935;border-radius:8px;padding:.75rem 1rem;margin-bottom:.75rem;font-size:.8rem;color:#c62828;line-height:1.5;}
+.val-error ul{padding-left:1.1rem;margin-top:.3rem;}
+.submit-success{background:#d4edda;border:1px solid #2e8b57;border-radius:10px;padding:1.25rem;text-align:center;}
+.submit-success .check{font-size:2rem;margin-bottom:.4rem;}
+.submit-success h3{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;color:var(--green);letter-spacing:1px;margin-bottom:.25rem;}
+.submit-success p{font-size:.8rem;color:var(--green-mid);}
+
+/* STICKY */
+#sticky-submit{display:none;position:fixed;bottom:1rem;right:1rem;z-index:999;}
+#sticky-submit button{background:var(--gold);color:#3a2600;border:none;border-radius:50px;padding:.65rem 1.2rem;font-family:'Inter',sans-serif;font-weight:700;font-size:.83rem;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.35);display:flex;align-items:center;gap:5px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-badge">USA · Canada · Mexico · 2026</div>
+  <h1>⚽ World Cup <span>2026</span></h1>
+  <p id="header-sub">Prediction Game</p>
+  <div id="player-badge" class="player-badge" style="display:none"></div>
+</header>
+
+<!-- ADMIN NAV -->
+<nav id="admin-nav" style="display:none">
+  <button class="active" onclick="showTab('asetup',this)">⚙️ Setup</button>
+  <button onclick="showTab('aleaderboard',this)">🏆 Leaderboard</button>
+  <button onclick="showTab('aqualifiers',this)">🎯 Qualifiers</button>
+  <button onclick="showTab('athirds',this)">3️⃣ Best 3rds</button>
+  <button onclick="showTab('akockout',this)">🥊 Knockouts</button>
+  <button onclick="showTab('awinner',this)">🌍 Cup Winner</button>
+  <button onclick="adminLogout()" style="margin-left:auto;border-color:rgba(255,100,100,.4);color:rgba(255,150,150,.8);">Logout</button>
+</nav>
+
+<!-- PLAYER NAV -->
+<nav id="player-nav" style="display:none">
+  <button class="active" onclick="showPlayerTab('pq',this)">🎯 Qualifiers</button>
+  <button onclick="showPlayerTab('pt',this)">3️⃣ Best 3rds</button>
+  <button id="nav-pk" onclick="showPlayerTab('pk',this)">🥊 Knockouts</button>
+  <button id="nav-pw" onclick="showPlayerTab('pw',this)">🌍 Cup Winner</button>
+  <button onclick="showPlayerTab('psubmit',this)">📤 Submit</button>
+</nav>
+
+<main id="main-content">
+  <div class="loading-screen" id="loading">
+    <div class="spinner"></div>
+    <p>Loading game data…</p>
+  </div>
+</main>
+
+<!-- STICKY SUBMIT -->
+<div id="sticky-submit">
+  <button onclick="goSubmit()">📤 Submit Predictions</button>
+</div>
+
+<script>
+// ══ CONFIG — EDIT THESE ══════════════════════════════════════════════════
+// After creating your GitHub repo, fill in these three values:
+const GH_OWNER  = 'YOUR_GITHUB_USERNAME';   // e.g. 'john'
+const GH_REPO   = 'YOUR_REPO_NAME';          // e.g. 'wc2026'
+const DATA_FILE = 'data.json';               // don't change this
+const ADMIN_PASSWORD = 'YOUR_ADMIN_PASSWORD'; // pick any password
+
+// ════════════════════════════════════════════════════════════════════════
+
+const GROUPS={
+  A:["Mexico","South Korea","South Africa","Czechia"],
+  B:["Canada","Bosnia-Herzegovina","Qatar","Switzerland"],
+  C:["Brazil","Morocco","Haiti","Scotland"],
+  D:["USA","Paraguay","Australia","Türkiye"],
+  E:["Germany","Curaçao","Ivory Coast","Ecuador"],
+  F:["Netherlands","Japan","Sweden","Tunisia"],
+  G:["Belgium","Egypt","Iran","New Zealand"],
+  H:["Spain","Cape Verde","Saudi Arabia","Uruguay"],
+  I:["France","Senegal","Iraq","Norway"],
+  J:["Argentina","Algeria","Austria","Jordan"],
+  K:["Portugal","Congo DR","Uzbekistan","Colombia"],
+  L:["England","Croatia","Ghana","Panama"],
+};
+const ALL_TEAMS=[...new Set(Object.values(GROUPS).flat())].sort();
+const GROUP_KEYS=Object.keys(GROUPS);
+const KO_DEF=[
+  {key:"Round of 32",count:16,cls:"ko-r32"},
+  {key:"Round of 16",count:8,cls:"ko-r16"},
+  {key:"Quarter-finals",count:4,cls:"ko-qf"},
+  {key:"Semi-finals",count:2,cls:"ko-sf"},
+  {key:"3rd Place",count:1,cls:"ko-tp"},
+  {key:"Final",count:1,cls:"ko-f"},
+];
+const KO_MATCHES=[];
+for(const {key,count,cls} of KO_DEF)
+  for(let i=1;i<=count;i++)
+    KO_MATCHES.push({id:`ko_${key.replace(/\s/g,'_')}_${i}`,round:key,label:`Match ${i}`,cls});
+
+// ══ GAME STATE (loaded from GitHub) ══════════════════════════════════════
+let GD = {                  // Game Data — mirrors data.json
+  players: [],
+  unlocked: false,
+  qualActual: {},
+  thirdsActual: [],
+  koResults: {},
+  twActual: "",
+  predictions: {}           // { playerName: { qual, thirds, ko, tw } }
+};
+let ghToken = '';           // stored in sessionStorage, never in repo
+let ghFileSha = '';         // needed for GitHub API updates
+let currentPlayer = null;   // name of the logged-in player
+let isAdmin = false;
+let PP = { qual:{}, thirds:{}, ko:{}, tw:'' }; // player's local picks
+let currentKORound = 'Round of 32';
+
+// ══ GITHUB API ════════════════════════════════════════════════════════════
+const API = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${DATA_FILE}`;
+
+async function ghRead(){
+  const r = await fetch(API + '?t=' + Date.now(), {
+    headers: ghToken ? {Authorization:`token ${ghToken}`} : {}
+  });
+  if(!r.ok) throw new Error('Cannot load game data (status '+r.status+')');
+  const j = await r.json();
+  ghFileSha = j.sha;
+  return JSON.parse(atob(j.content.replace(/\n/g,'')));
+}
+
+async function ghWrite(data){
+  if(!ghToken) throw new Error('No token');
+  const body = {
+    message: `Update predictions ${new Date().toISOString()}`,
+    content: btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2)))),
+    sha: ghFileSha
+  };
+  const r = await fetch(API, {
+    method:'PUT',
+    headers:{Authorization:`token ${ghToken}`,'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  if(!r.ok){const e=await r.json();throw new Error(e.message||'Write failed');}
+  const j = await r.json();
+  ghFileSha = j.content.sha;
+}
+
+// ══ SCORING ═══════════════════════════════════════════════════════════════
+function calcPoints(playerName){
+  const p = GD.predictions[playerName] || {};
+  let qual=0, thirds=0, ko=0, tw=0;
+  for(const g of GROUP_KEYS){
+    const actual=GD.qualActual[g]||[];
+    for(const t of (p.qual?.[g]||[]))
+      if(actual.some(a=>a&&t&&a.toLowerCase()===t.toLowerCase())) qual+=3;
+  }
+  const tA=GD.thirdsActual||[];
+  const tP=p.thirds||{};
+  const tPvals=Array.isArray(tP)?tP:Object.values(tP);
+  for(const t of tPvals)
+    if(tA.some(a=>a&&t&&a.toLowerCase()===t.toLowerCase())) thirds++;
+  for(const m of KO_MATCHES){
+    const pred=(p.ko||{})[m.id];
+    const res=GD.koResults[m.id];
+    if(res&&pred&&pred.toLowerCase()===res.toLowerCase()) ko+=3;
+  }
+  if(GD.twActual&&(p.tw||'').toLowerCase()===GD.twActual.toLowerCase()) tw=10;
+  return {qual,thirds,ko,tw,total:qual+thirds+ko+tw};
+}
+
+// ══ INIT ══════════════════════════════════════════════════════════════════
+async function init(){
+  showLoading('Loading game data…');
+  // Restore token from session
+  ghToken = sessionStorage.getItem('gh_token') || '';
+  try {
+    GD = await ghRead();
+  } catch(e){
+    showMain(`<div class="card" style="max-width:480px;margin:0 auto;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:.5rem">⚠️</div>
+      <h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--red);margin-bottom:.5rem;">Cannot connect to game data</h3>
+      <p style="font-size:.82rem;color:var(--gray-mid);">Make sure the GitHub config at the top of the file is correct and the <code>data.json</code> file exists in your repo.</p>
+    </div>`);
+    return;
+  }
+  // Check hash
+  const hash = location.hash;
+  if(hash === '#admin'){
+    showAdminLogin();
+  } else {
+    showHome();
+  }
+}
+
+// ══ LOADING ════════════════════════════════════════════════════════════════
+function showLoading(msg='Loading…'){
+  document.getElementById('main-content').innerHTML=
+    `<div class="loading-screen"><div class="spinner"></div><p>${msg}</p></div>`;
+}
+function showMain(html){
+  document.getElementById('main-content').innerHTML = html;
+}
+
+// ══ HOME (player picker) ═══════════════════════════════════════════════════
+function showHome(){
+  document.getElementById('admin-nav').style.display='none';
+  document.getElementById('player-nav').style.display='none';
+  document.getElementById('sticky-submit').style.display='none';
+  document.getElementById('header-sub').textContent='Prediction Game';
+  document.getElementById('player-badge').style.display='none';
+  isAdmin = false;
+
+  const playerBtns = GD.players.map(name=>{
+    const hasSubmitted = !!GD.predictions[name];
+    return `<button class="player-select-btn" onclick="loginAsPlayer('${name.replace(/'/g,"\\'")}')">
+      <div class="avatar">${name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase()}</div>
+      <span>${name}</span>
+      <span class="status-tag ${hasSubmitted?'status-submitted':'status-pending'}">${hasSubmitted?'✅ Submitted':'Pending'}</span>
+    </button>`;
+  }).join('');
+
+  showMain(`<div class="home-card">
+    <h2>⚽ Who are you?</h2>
+    <p>Select your name to enter or update your predictions. All picks are saved automatically when you submit.</p>
+    <div class="player-select-list">${playerBtns||'<p style="color:var(--gray-mid);font-size:.85rem">No players added yet. Ask the admin to set up the game.</p>'}</div>
+    <div style="text-align:center;padding-top:.75rem;border-top:1px solid #eee;">
+      <button onclick="showLeaderboard()" class="btn btn-green" style="margin-bottom:.5rem;width:100%;">🏆 View Leaderboard</button>
+    </div>
+    <div class="admin-link"><button onclick="location.hash='admin';showAdminLogin()">Admin access →</button></div>
+  </div>`);
+}
+
+// ══ LEADERBOARD (public) ═══════════════════════════════════════════════════
+function showLeaderboard(){
+  document.getElementById('admin-nav').style.display='none';
+  document.getElementById('player-nav').style.display='none';
+  document.getElementById('sticky-submit').style.display='none';
+  const rows=GD.players.map(name=>({name,...calcPoints(name)})).sort((a,b)=>b.total-a.total);
+  showMain(`
+    <button onclick="showHome()" class="btn btn-gray" style="margin-bottom:1rem;">← Back</button>
+    <div class="lb-hdr">
+      <h2>🏆 Leaderboard</h2>
+      <p>Live standings — updates as results are entered</p>
+      <div class="pts-legend">
+        <div class="legend-chip">Group qualifier: <span>3 pts</span></div>
+        <div class="legend-chip">Best 3rd: <span>1 pt</span></div>
+        <div class="legend-chip">KO winner: <span>3 pts</span></div>
+        <div class="legend-chip">Cup winner: <span>10 pts</span></div>
+      </div>
+    </div>
+    <div class="lb-table"><table>
+      <thead><tr><th style="width:36px">#</th><th>Player</th><th>Qual</th><th>3rds</th><th>KO</th><th>Cup</th><th>Total</th></tr></thead>
+      <tbody>${rows.map((p,r)=>{
+        const cls=r===0?'rank-1':r===1?'rank-2':r===2?'rank-3':'rank-other';
+        const medal=r===0?'🥇':r===1?'🥈':r===2?'🥉':r+1;
+        const sub=GD.predictions[p.name]?'✓':'';
+        return `<tr>
+          <td><span class="rank-badge ${cls}">${medal}</span></td>
+          <td class="player-name-cell">${p.name} <span style="font-size:.6rem;color:var(--green)">${sub}</span></td>
+          <td>${p.qual}</td><td>${p.thirds}</td><td>${p.ko}</td><td>${p.tw}</td>
+          <td class="total-pts">${p.total}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`);
+}
+
+// ══ PLAYER LOGIN ═══════════════════════════════════════════════════════════
+function loginAsPlayer(name){
+  currentPlayer = name;
+  isAdmin = false;
+  // Load existing predictions if any
+  if(GD.predictions[name]){
+    const saved = GD.predictions[name];
+    PP.qual   = saved.qual   || {};
+    PP.thirds = saved.thirds || {};
+    PP.ko     = saved.ko     || {};
+    PP.tw     = saved.tw     || '';
+  } else {
+    PP = { qual:{}, thirds:{}, ko:{}, tw:'' };
+  }
+  document.getElementById('header-sub').textContent = `Predictions for: ${name}`;
+  document.getElementById('player-badge').textContent = `👤 ${name}`;
+  document.getElementById('player-badge').style.display = 'inline-block';
+  document.getElementById('player-nav').style.display = 'flex';
+  document.getElementById('sticky-submit').style.display = 'block';
+  applyPlayerNavLock();
+  // Clear main and show panels
+  showMain(playerPanelsHTML());
+  showPlayerTab('pq', document.querySelector('#player-nav button'));
+}
+
+function applyPlayerNavLock(){
+  const pkBtn=document.getElementById('nav-pk');
+  const pwBtn=document.getElementById('nav-pw');
+  if(GD.unlocked){
+    pkBtn.classList.remove('locked'); pkBtn.style.pointerEvents='';
+    pwBtn.classList.remove('locked'); pwBtn.style.pointerEvents='';
+  } else {
+    pkBtn.classList.add('locked'); pkBtn.style.pointerEvents='none';
+    pwBtn.classList.add('locked'); pwBtn.style.pointerEvents='none';
+  }
+}
+
+function playerPanelsHTML(){
+  return `
+  <div id="tab-pq" class="panel"></div>
+  <div id="tab-pt" class="panel"></div>
+  <div id="tab-pk" class="panel"></div>
+  <div id="tab-pw" class="panel"></div>
+  <div id="tab-psubmit" class="panel"></div>`;
+}
+
+function showPlayerTab(tab, btn){
+  if((tab==='pk'||tab==='pw')&&!GD.unlocked) return;
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#player-nav button').forEach(b=>b.classList.remove('active'));
+  const el = document.getElementById('tab-'+tab);
+  if(!el) return;
+  el.classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(tab==='pq') renderPlayerQualifiers();
+  if(tab==='pt') renderPlayerThirds();
+  if(tab==='pk') renderPlayerKO();
+  if(tab==='pw') renderPlayerTW();
+  if(tab==='psubmit') renderSubmit();
+}
+
+function goSubmit(){
+  showPlayerTab('psubmit', document.querySelector('#player-nav button:last-child'));
+}
+
+// ── Player: Qualifiers ──────────────────────────────────
+function renderPlayerQualifiers(){
+  const cont = document.getElementById('tab-pq');
+  let html=`<div class="player-intro">
+    <h2>🎯 Group Qualifier Picks</h2>
+    <p>Pick the 2 teams qualifying from each group. <strong>3 pts</strong> per correct pick.</p>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="pq-bar" style="width:0%;background:var(--green)"></div></div>
+    <div class="progress-label" id="pq-label">0 / 24 picks made</div>
+  </div>`;
+  html += GROUP_KEYS.map(g=>{
+    const teams=GROUPS[g];
+    const picks=PP.qual[g]||['',''];
+    const selects=[0,1].map(idx=>{
+      const sel=picks[idx]||'';
+      const other=picks[1-idx]||'';
+      const opts=`<option value="">— Qualifier ${idx+1} —</option>`+
+        teams.map(t=>`<option value="${t}"${t===sel?' selected':''}${t===other&&other?' disabled':''}>${t}${t===other&&other?' ✗':''}</option>`).join('');
+      return `<select class="player-qual-pick" onchange="setPlayerQual('${g}',${idx},this.value)">${opts}</select>`;
+    }).join('');
+    const status=picks[0]&&picks[1]?'✅':picks[0]||picks[1]?'🔶':'⬜';
+    return `<div class="player-section">
+      <div class="player-section-hdr green"><h3>${status} Group ${g}</h3><span class="badge">${teams.join(' · ')}</span></div>
+      <div class="player-section-body"><div class="player-qual-picks">${selects}</div></div>
+    </div>`;
+  }).join('');
+  cont.innerHTML=html;
+  updateQualProgress();
+}
+function setPlayerQual(g,idx,val){
+  if(!PP.qual[g])PP.qual[g]=['',''];
+  if(val&&PP.qual[g][1-idx]===val)PP.qual[g][1-idx]='';
+  PP.qual[g][idx]=val;
+  if(Array.isArray(PP.thirds))PP.thirds={};
+  if(val&&PP.thirds[g]===val)PP.thirds[g]='';
+  renderPlayerQualifiers();
+  if(document.getElementById('tab-pt').classList.contains('active'))renderPlayerThirds();
+}
+function updateQualProgress(){
+  let f=0;
+  for(const g of GROUP_KEYS){const p=PP.qual[g]||[];f+=p.filter(v=>v).length;}
+  const pct=Math.round(f/24*100);
+  const bar=document.getElementById('pq-bar');
+  const lbl=document.getElementById('pq-label');
+  if(bar)bar.style.width=pct+'%';
+  if(lbl)lbl.textContent=`${f} / 24 picks made`;
+}
+
+// ── Player: Best 3rds ────────────────────────────────────
+function renderPlayerThirds(){
+  if(Array.isArray(PP.thirds))PP.thirds={};
+  const qualPicked=new Set();
+  for(const g of GROUP_KEYS)(PP.qual[g]||[]).forEach(t=>{if(t)qualPicked.add(t);});
+  const totalPicked=GROUP_KEYS.filter(g=>PP.thirds[g]).length;
+  const maxReached=totalPicked>=8;
+  const cont=document.getElementById('tab-pt');
+  let html=`<div class="player-intro" style="margin-bottom:1.1rem;">
+    <h2>3️⃣ Best 3rd Place Teams</h2>
+    <p>Choose <strong>8 teams</strong> across any groups that you think finish 3rd and advance. Teams picked as qualifiers are excluded. <strong>1 pt</strong> each.</p>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="pt-bar" style="width:0%;background:var(--purple)"></div></div>
+    <div class="progress-label" id="pt-label">0 / 8 picks made</div>
+  </div>`;
+  html+=GROUP_KEYS.map(g=>{
+    const teams=GROUPS[g];
+    const sel=PP.thirds[g]||'';
+    const status=sel?'✅':'⬜';
+    const btns=teams.map(t=>{
+      const isQual=qualPicked.has(t);
+      const isSel=t===sel;
+      const capLocked=!isSel&&maxReached&&!isQual;
+      const cls=isQual?'thirds-team-btn qualifier':isSel?'thirds-team-btn selected':capLocked?'thirds-team-btn cap-locked':'thirds-team-btn';
+      const dis=isQual||capLocked?'disabled':'';
+      return `<button class="${cls}" ${dis} onclick="setPlayerThird('${g}','${t}')">${t}${isQual?' 🚫':''}</button>`;
+    }).join('');
+    return `<div class="thirds-group-block">
+      <div class="thirds-group-hdr"><h3>${status} Group ${g}</h3><span class="badge">${sel?`✓ ${sel}`:'Pick one'}</span></div>
+      <div class="thirds-group-body"><div class="thirds-team-btns">${btns}</div></div>
+    </div>`;
+  }).join('');
+  cont.innerHTML=html;
+  const pct=Math.round(Math.min(totalPicked,8)/8*100);
+  document.getElementById('pt-bar').style.width=pct+'%';
+  document.getElementById('pt-label').textContent=`${totalPicked} / 8 picks made${maxReached?' ✅ Full!':''}`;
+}
+function setPlayerThird(g,val){
+  if(Array.isArray(PP.thirds))PP.thirds={};
+  PP.thirds[g]=(PP.thirds[g]===val)?'':val;
+  renderPlayerThirds();
+}
+
+// ── Player: Knockouts ────────────────────────────────────
+function renderPlayerKO(){
+  const cont=document.getElementById('tab-pk');
+  if(!GD.unlocked){cont.innerHTML=lockedMsg('Knockouts','The admin will unlock this after the group stage.');return;}
+  const RCL={'Round of 32':'#c0392b','Round of 16':'#e67e22','Quarter-finals':'#8b1a1a','Semi-finals':'#5b21b6','3rd Place':'#555','Final':'#c9a84c'};
+  const matches=KO_MATCHES.filter(m=>m.round===currentKORound);
+  cont.innerHTML=`
+    <div class="sec-hdr"><h2>🥊 Knockout Predictions</h2><span class="pill">3 pts per correct winner</span></div>
+    <div class="ko-subtabs" id="pko-tabs">
+      ${KO_DEF.map((r,i)=>`<button class="ko-subtab ${r.cls.replace('ko-','')}${i===0?' active':''}" onclick="setPlayerKORound('${r.key}',this)">${r.key==='Final'?'⭐ Final':r.key==='3rd Place'?'3rd':r.key}</button>`).join('')}
+    </div>
+    <div class="match-grid" id="pko-grid">${matches.map(m=>{
+      const pred=PP.ko[m.id]||'';
+      const opts=`<option value="">— Pick winner —</option>`+ALL_TEAMS.map(t=>`<option value="${t}"${t===pred?' selected':''}>${t}</option>`).join('');
+      return `<div class="match-card ${m.cls}">
+        <div class="match-round-label" style="color:${RCL[m.round]}">${m.round} · ${m.label}</div>
+        <select class="pred-select" style="width:100%;margin-top:4px;" onchange="PP.ko['${m.id}']=this.value">${opts}</select>
+      </div>`;
+    }).join('')}</div>`;
+}
+function setPlayerKORound(round,btn){
+  currentKORound=round;
+  document.querySelectorAll('#pko-tabs .ko-subtab').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  const RCL={'Round of 32':'#c0392b','Round of 16':'#e67e22','Quarter-finals':'#8b1a1a','Semi-finals':'#5b21b6','3rd Place':'#555','Final':'#c9a84c'};
+  const matches=KO_MATCHES.filter(m=>m.round===round);
+  document.getElementById('pko-grid').innerHTML=matches.map(m=>{
+    const pred=PP.ko[m.id]||'';
+    const opts=`<option value="">— Pick winner —</option>`+ALL_TEAMS.map(t=>`<option value="${t}"${t===pred?' selected':''}>${t}</option>`).join('');
+    return `<div class="match-card ${m.cls}">
+      <div class="match-round-label" style="color:${RCL[round]}">${round} · ${m.label}</div>
+      <select class="pred-select" style="width:100%;margin-top:4px;" onchange="PP.ko['${m.id}']=this.value">${opts}</select>
+    </div>`;
+  }).join('');
+}
+
+// ── Player: Tournament Winner ────────────────────────────
+function renderPlayerTW(){
+  const cont=document.getElementById('tab-pw');
+  if(!GD.unlocked){cont.innerHTML=lockedMsg('Cup Winner','The admin will unlock this after the group stage.');return;}
+  const opts=`<option value="">— Pick the winner —</option>`+ALL_TEAMS.map(t=>`<option value="${t}"${t===PP.tw?' selected':''}>${t}</option>`).join('');
+  cont.innerHTML=`<div class="player-section">
+    <div class="player-section-hdr gold"><h3>🌍 Tournament Winner</h3><span class="badge">10 pts if correct</span></div>
+    <div class="player-section-body" style="text-align:center;padding:1.5rem;">
+      <p style="font-size:.82rem;color:var(--gray-mid);margin-bottom:.9rem;">Which team lifts the World Cup trophy?</p>
+      <select class="tw-actual-select" style="max-width:300px;" onchange="PP.tw=this.value;document.getElementById('tw-confirm').textContent=this.value?'⚽ You picked: '+this.value:''">${opts}</select>
+      <div id="tw-confirm" style="margin-top:.6rem;font-size:.85rem;color:var(--green);font-weight:600;">${PP.tw?'⚽ You picked: '+PP.tw:''}</div>
+    </div>
+  </div>`;
+}
+
+function lockedMsg(title,msg){
+  return `<div class="locked-msg"><div class="lock-icon">🔒</div><h3>${title} Locked</h3><p>${msg}</p></div>`;
+}
+
+// ── Submit ───────────────────────────────────────────────
+function renderSubmit(){
+  const errors=validatePredictions();
+  const cont=document.getElementById('tab-psubmit');
+  const errHtml=errors.length?`<div class="val-error">⚠ Please fix these before submitting:<ul>${errors.map(e=>`<li>${e}</li>`).join('')}</ul></div>`:'';
+  cont.innerHTML=`<div class="submit-card">
+    <h3>📤 Submit Your Predictions</h3>
+    <p>Click below to save your predictions. You can come back and update them anytime before the tournament starts.</p>
+    <div id="submit-errors">${errHtml}</div>
+    <button class="btn btn-gold btn-full" style="font-size:.95rem;padding:.8rem;" onclick="submitPredictions()" ${errors.length?'disabled style="opacity:.5;cursor:not-allowed"':''}>
+      ✅ Submit My Predictions
+    </button>
+    <div id="submit-status" style="margin-top:.75rem;font-size:.82rem;font-weight:600;text-align:center;"></div>
+  </div>`;
+}
+
+function validatePredictions(){
+  const errors=[];
+  const missingQual=[], dupQual=[];
+  for(const g of GROUP_KEYS){
+    const p=PP.qual[g]||['',''];
+    if(!p[0]||!p[1]) missingQual.push(`Group ${g}`);
+    else if(p[0]===p[1]) dupQual.push(`Group ${g}`);
+  }
+  if(missingQual.length) errors.push(`Missing qualifier picks: ${missingQual.join(', ')}`);
+  if(dupQual.length) errors.push(`Duplicate qualifier picks: ${dupQual.join(', ')}`);
+  if(Array.isArray(PP.thirds))PP.thirds={};
+  const tc=GROUP_KEYS.filter(g=>PP.thirds[g]).length;
+  if(tc<8) errors.push(`Best 3rd places: ${8-tc} more pick(s) needed (${tc}/8)`);
+  if(GD.unlocked){
+    const missingKO=KO_MATCHES.filter(m=>!PP.ko[m.id]);
+    if(missingKO.length) errors.push(`Knockout picks: ${missingKO.length} match(es) missing`);
+    if(!PP.tw) errors.push('No tournament winner picked');
+  }
+  return errors;
+}
+
+async function submitPredictions(){
+  const status=document.getElementById('submit-status');
+  const btn=document.querySelector('#tab-psubmit .btn-gold');
+  btn.disabled=true; btn.textContent='Saving…';
+  status.style.color=var(--gray-mid); status.textContent='Connecting to GitHub…';
+  // We need a token to write. Ask for it if not stored.
+  if(!ghToken){
+    const tok=prompt('Enter the game token provided by the admin:');
+    if(!tok){btn.disabled=false;btn.textContent='✅ Submit My Predictions';status.textContent='';return;}
+    ghToken=tok.trim();
+    sessionStorage.setItem('gh_token', ghToken);
+  }
+  try {
+    // Re-read to get latest SHA
+    GD = await ghRead();
+    GD.predictions[currentPlayer] = { qual:PP.qual, thirds:PP.thirds, ko:PP.ko, tw:PP.tw };
+    await ghWrite(GD);
+    document.getElementById('tab-psubmit').innerHTML=`<div class="submit-success">
+      <div class="check">✅</div>
+      <h3>Predictions Saved!</h3>
+      <p>Your picks are live. You can come back anytime to update them.</p>
+      <button class="btn btn-green" style="margin-top:1rem;" onclick="showHome()">← Back to home</button>
+    </div>`;
+    document.getElementById('sticky-submit').style.display='none';
+  } catch(e){
+    status.style.color='var(--red)';
+    status.textContent='❌ Error: '+e.message;
+    btn.disabled=false; btn.textContent='✅ Submit My Predictions';
+    // Clear bad token so they can retry
+    ghToken=''; sessionStorage.removeItem('gh_token');
+  }
+}
+
+// ══ ADMIN LOGIN ══════════════════════════════════════════
+function showAdminLogin(){
+  document.getElementById('admin-nav').style.display='none';
+  document.getElementById('player-nav').style.display='none';
+  document.getElementById('sticky-submit').style.display='none';
+  showMain(`<div class="login-card">
+    <h2>🔐 Admin Access</h2>
+    <p>Enter the admin password to manage game settings and results.</p>
+    <input type="password" id="admin-pw" placeholder="Password" onkeydown="if(event.key==='Enter')adminLogin()">
+    <button class="btn btn-red btn-full" onclick="adminLogin()">Login</button>
+    <div id="login-error"></div>
+    <div style="margin-top:1rem"><button class="btn btn-gray btn-full" onclick="location.hash='';showHome()">← Back</button></div>
+  </div>`);
+  setTimeout(()=>document.getElementById('admin-pw')?.focus(),100);
+}
+
+function adminLogin(){
+  const pw=document.getElementById('admin-pw').value;
+  if(pw===ADMIN_PASSWORD){
+    isAdmin=true;
+    // Ask for token once
+    if(!ghToken){
+      const tok=prompt('Enter your GitHub Personal Access Token (stored only for this session):');
+      if(!tok){return;}
+      ghToken=tok.trim();
+      sessionStorage.setItem('gh_token',ghToken);
+    }
+    location.hash='admin';
+    document.getElementById('header-sub').textContent='Admin Panel';
+    document.getElementById('player-badge').style.display='none';
+    document.getElementById('admin-nav').style.display='flex';
+    document.getElementById('player-nav').style.display='none';
+    showMain(adminPanelsHTML());
+    showTab('asetup', document.querySelector('#admin-nav button'));
+  } else {
+    document.getElementById('login-error').textContent='❌ Incorrect password';
+  }
+}
+
+function adminLogout(){
+  isAdmin=false; ghToken='';
+  sessionStorage.removeItem('gh_token');
+  location.hash='';
+  showHome();
+}
+
+function adminPanelsHTML(){
+  return `
+  <div id="tab-asetup" class="panel"></div>
+  <div id="tab-aleaderboard" class="panel"></div>
+  <div id="tab-aqualifiers" class="panel"></div>
+  <div id="tab-athirds" class="panel"></div>
+  <div id="tab-akockout" class="panel"></div>
+  <div id="tab-awinner" class="panel"></div>`;
+}
+
+// ══ ADMIN TABS ═══════════════════════════════════════════
+function showTab(tab,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#admin-nav button').forEach(b=>b.classList.remove('active'));
+  const el=document.getElementById('tab-'+tab);
+  if(!el)return;
+  el.classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(tab==='asetup')renderAdminSetup();
+  if(tab==='aleaderboard')renderAdminLeaderboard();
+  if(tab==='aqualifiers')renderAdminQualifiers();
+  if(tab==='athirds')renderAdminThirds();
+  if(tab==='akockout')renderAdminKO();
+  if(tab==='awinner')renderAdminTW();
+}
+
+// ── Admin: Setup ─────────────────────────────────────────
+function renderAdminSetup(){
+  const cont=document.getElementById('tab-asetup');
+  const inputs=Array.from({length:11},(_,i)=>
+    `<div class="player-row"><div class="player-num">${i+1}</div>
+    <input type="text" id="adp${i}" placeholder="Player ${i+1}" value="${GD.players[i]||''}"></div>`
+  ).join('');
+  const playerLinks=GD.players.map(n=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:.5rem .75rem;background:var(--gray-light);border-radius:8px;flex-wrap:wrap;">
+      <span style="font-weight:700;font-size:.82rem;min-width:80px;">${n} ${GD.predictions[n]?'<span style="font-size:.62rem;color:var(--green)">✓</span>':''}</span>
+      <span style="font-family:monospace;font-size:.72rem;color:var(--gray-mid);flex:1;">#player=${encodeURIComponent(n)}</span>
+      <button class="copy-btn" onclick="copyText('#player=${encodeURIComponent(n)}',this)">Copy</button>
+    </div>`).join('');
+  cont.innerHTML=`<div class="card setup-card">
+    <h2>⚙️ Game Setup</h2>
+    <div class="sub">Add up to 11 players. Share their personal link (the #hash) to append to the app URL.</div>
+    <div class="player-list">${inputs}</div>
+    <button class="btn btn-green btn-full" onclick="adminSavePlayers()">💾 Save Players</button>
+    <div id="asetup-status" class="save-status"></div>
+    <div class="unlock-row" style="margin-top:1rem;">
+      <label>🔓 Unlock Knockouts &amp; Cup Winner for players</label>
+      <label class="toggle-switch">
+        <input type="checkbox" id="unlock-toggle" ${GD.unlocked?'checked':''} onchange="adminToggleUnlock(this.checked)">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid #e8e8e4;">
+      <h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--green);margin-bottom:.5rem;">📤 Player Links</h3>
+      <p style="font-size:.78rem;color:var(--gray-mid);margin-bottom:.75rem;">Each player adds their hash to the end of the app URL. Example: <code>https://your-name.github.io/wc2026/#player=Rami</code></p>
+      <div style="display:flex;flex-direction:column;gap:7px;">${playerLinks}</div>
+    </div>
+    <div style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid #e8e8e4;">
+      <h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:#c0392b;margin-bottom:.25rem;">🎫 Game Token</h3>
+      <p style="font-size:.78rem;color:var(--gray-mid);margin-bottom:.6rem;">Players need this token when submitting. Share it privately with all players.</p>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="token-display" value="${ghToken}" readonly style="flex:1;padding:7px 10px;border:1px solid #d0d0cc;border-radius:7px;font-family:monospace;font-size:.78rem;">
+        <button class="copy-btn" onclick="copyText(document.getElementById('token-display').value,this)">Copy</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function adminSavePlayers(){
+  const names=[];
+  for(let i=0;i<11;i++){const v=document.getElementById('adp'+i).value.trim();if(v)names.push(v);}
+  GD.players=names.length?names:['Player 1'];
+  await adminSave('asetup-status');
+}
+async function adminToggleUnlock(val){
+  GD.unlocked=val;
+  await adminSave();
+}
+async function adminSave(statusId){
+  const status=statusId?document.getElementById(statusId):null;
+  if(status){status.style.color='var(--gray-mid)';status.textContent='Saving…';}
+  try{
+    await ghWrite(GD);
+    if(status){status.style.color='var(--green)';status.textContent='✅ Saved!';}
+    setTimeout(()=>{if(status)status.textContent='';},3000);
+  }catch(e){
+    if(status){status.style.color='var(--red)';status.textContent='❌ '+e.message;}
+  }
+}
+
+// ── Admin: Leaderboard ───────────────────────────────────
+function renderAdminLeaderboard(){
+  const rows=GD.players.map(n=>({name:n,...calcPoints(n)})).sort((a,b)=>b.total-a.total);
+  document.getElementById('tab-aleaderboard').innerHTML=`
+    <div class="lb-hdr"><h2>🏆 Leaderboard</h2><p>Live standings</p>
+      <div class="pts-legend">
+        <div class="legend-chip">Qualifier: <span>3 pts</span></div>
+        <div class="legend-chip">3rd: <span>1 pt</span></div>
+        <div class="legend-chip">KO: <span>3 pts</span></div>
+        <div class="legend-chip">Cup: <span>10 pts</span></div>
+      </div>
+    </div>
+    <div class="lb-table"><table>
+      <thead><tr><th style="width:36px">#</th><th>Player</th><th>Qual</th><th>3rds</th><th>KO</th><th>Cup</th><th>Total</th></tr></thead>
+      <tbody>${rows.map((p,r)=>{
+        const cls=r===0?'rank-1':r===1?'rank-2':r===2?'rank-3':'rank-other';
+        const medal=r===0?'🥇':r===1?'🥈':r===2?'🥉':r+1;
+        return `<tr>
+          <td><span class="rank-badge ${cls}">${medal}</span></td>
+          <td class="player-name-cell">${p.name} ${GD.predictions[p.name]?'<span style="font-size:.6rem;color:var(--green)">✓</span>':''}</td>
+          <td>${p.qual}</td><td>${p.thirds}</td><td>${p.ko}</td><td>${p.tw}</td>
+          <td class="total-pts">${p.total}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+}
+
+// ── Admin: Qualifiers ────────────────────────────────────
+let aQualKORound='Round of 32';
+function renderAdminQualifiers(){
+  document.getElementById('tab-aqualifiers').innerHTML=
+    `<div class="sec-hdr"><h2>🎯 Group Qualifiers</h2><span class="pill">Top 2 per group · 3 pts each</span></div>
+    <p class="sub-text">Set actual qualifiers once the group stage ends. Changes auto-save.</p>
+    ${GROUP_KEYS.map(g=>{
+      const teams=GROUPS[g];
+      const actual=GD.qualActual[g]||['',''];
+      const actualPicks=[0,1].map(idx=>{
+        const sel=actual[idx]||'';
+        const opts=`<option value="">— Qualifier ${idx+1} —</option>`+teams.map(t=>`<option value="${t}"${t===sel?' selected':''}>${t}</option>`).join('');
+        return `<select onchange="setAdminQualActual('${g}',${idx},this.value)">${opts}</select>`;
+      }).join('');
+      const playerRows=GD.players.map(pname=>{
+        const preds=(GD.predictions[pname]?.qual||{})[g]||['',''];
+        const picks=[0,1].map(idx=>{
+          const sel=preds[idx]||''; const a=actual[idx];
+          const cls=a&&sel?(sel.toLowerCase()===a.toLowerCase()?'correct':'wrong'):'';
+          return `<span class="qual-picks"><select class="${cls}" disabled style="min-width:110px;flex:1;padding:4px 6px;border:1px solid #e0dfd8;border-radius:6px;font-size:.73rem;background:${cls==='correct'?'#f0faf4':cls==='wrong'?'#fff5f5':'#fff'}">
+            <option>${sel||'—'}</option></select></span>`;
+        }).join('');
+        return `<div class="qual-player-row"><span class="qual-player-label" title="${pname}">${pname}</span><div style="display:flex;gap:7px;flex:1;flex-wrap:wrap;">${picks}</div></div>`;
+      }).join('');
+      return `<div class="qual-section">
+        <div class="qual-hdr"><h3>Group ${g}</h3><span class="teams-badge">${teams.join(' · ')}</span></div>
+        <div class="qual-body">
+          <div class="qual-actual-row"><span class="qual-actual-label">✅ Actual</span><div class="qual-actual-picks">${actualPicks}</div></div>
+          ${playerRows}
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+async function setAdminQualActual(g,idx,val){
+  if(!GD.qualActual[g])GD.qualActual[g]=['',''];
+  GD.qualActual[g][idx]=val;
+  await adminSave();
+  renderAdminQualifiers();
+}
+
+// ── Admin: Thirds ────────────────────────────────────────
+function renderAdminThirds(){
+  const cont=document.getElementById('tab-athirds');
+  const actualSlots=Array.from({length:8},(_,i)=>{
+    const sel=GD.thirdsActual[i]||'';
+    const opts=`<option value="">— Slot ${i+1} —</option>`+ALL_TEAMS.map(t=>`<option value="${t}"${t===sel?' selected':''}>${t}</option>`).join('');
+    return `<select class="thirds-chip-select" onchange="setAdminThirdsActual(${i},this.value)">${opts}</select>`;
+  }).join('');
+  const playerBlocks=GD.players.map(pname=>{
+    const tP=GD.predictions[pname]?.thirds||{};
+    const vals=Array.isArray(tP)?tP:Object.values(tP);
+    const picks=vals.map(t=>{
+      const isHit=GD.thirdsActual.some(a=>a&&t&&a.toLowerCase()===t.toLowerCase());
+      const cls=t&&GD.thirdsActual.filter(a=>a).length>0?(isHit?'correct':'wrong'):'';
+      return `<span style="padding:3px 9px;border-radius:12px;font-size:.73rem;font-weight:600;background:${cls==='correct'?'#d4edda':cls==='wrong'?'#fce8e8':'#f1efe8'};color:${cls==='correct'?'#1a6b3c':cls==='wrong'?'#c62828':'#888'}">${t||'—'}</span>`;
+    }).join('');
+    return `<div class="thirds-player-block"><div class="thirds-player-name">${pname}</div><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:.3rem;">${picks||'<span style="font-size:.75rem;color:#aaa">No picks yet</span>'}</div></div>`;
+  }).join('');
+  cont.innerHTML=`
+    <div class="sec-hdr"><h2>3️⃣ Best 3rd Place Teams</h2><span class="pill">8 qualify · 1 pt each</span></div>
+    <p class="sub-text">Set the actual 8 qualifying 3rd-place teams.</p>
+    <div class="card">
+      <div class="thirds-actual"><div class="thirds-actual-label">✅ Actual 8 qualifying 3rd-place teams</div><div class="thirds-grid">${actualSlots}</div></div>
+      ${playerBlocks}
+    </div>`;
+}
+async function setAdminThirdsActual(i,val){
+  if(!GD.thirdsActual)GD.thirdsActual=[];
+  GD.thirdsActual[i]=val;
+  await adminSave();
+  renderAdminThirds();
+}
+
+// ── Admin: Knockouts ─────────────────────────────────────
+function renderAdminKO(){
+  const cont=document.getElementById('tab-akockout');
+  const RCL={'Round of 32':'#c0392b','Round of 16':'#e67e22','Quarter-finals':'#8b1a1a','Semi-finals':'#5b21b6','3rd Place':'#555','Final':'#c9a84c'};
+  const matches=KO_MATCHES.filter(m=>m.round===aQualKORound);
+  cont.innerHTML=`
+    <div class="sec-hdr"><h2>🥊 Knockout Stage</h2><span class="pill">3 pts per correct winner</span></div>
+    <div class="ko-subtabs" id="ako-tabs">
+      ${KO_DEF.map((r,i)=>`<button class="ko-subtab ${r.cls.replace('ko-','')}${r.key===aQualKORound?' active':''}" onclick="setAdminKORound('${r.key}',this)">${r.key==='Final'?'⭐ Final':r.key==='3rd Place'?'3rd':r.key}</button>`).join('')}
+    </div>
+    <div class="match-grid" id="ako-grid">${adminKOCards(matches,RCL)}</div>`;
+}
+function adminKOCards(matches,RCL){
+  return matches.map(m=>{
+    const res=GD.koResults[m.id]||'';
+    const playerRows=GD.players.map(pname=>{
+      const pred=(GD.predictions[pname]?.ko||{})[m.id]||'';
+      const cls=res&&pred?(pred.toLowerCase()===res.toLowerCase()?'correct':'wrong'):'';
+      return `<div class="pred-row"><span class="pred-player" title="${pname}">${pname}</span>
+        <span class="pred-select ${cls}" style="flex:1;font-size:.76rem;font-weight:600;padding:4px 6px;">${pred||'—'}</span></div>`;
+    }).join('');
+    const resOpts=`<option value="">— result —</option>`+ALL_TEAMS.map(t=>`<option value="${t}"${t===res?' selected':''}>${t}</option>`).join('');
+    return `<div class="match-card ${m.cls}">
+      <div class="match-round-label" style="color:${RCL[m.round]}">${m.round} · ${m.label}</div>
+      ${playerRows}
+      <div class="actual-row"><span class="actual-label">Result</span><select class="actual-select" onchange="setAdminKOResult('${m.id}',this.value)">${resOpts}</select></div>
+    </div>`;
+  }).join('');
+}
+function setAdminKORound(round,btn){
+  aQualKORound=round;
+  document.querySelectorAll('#ako-tabs .ko-subtab').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  const RCL={'Round of 32':'#c0392b','Round of 16':'#e67e22','Quarter-finals':'#8b1a1a','Semi-finals':'#5b21b6','3rd Place':'#555','Final':'#c9a84c'};
+  document.getElementById('ako-grid').innerHTML=adminKOCards(KO_MATCHES.filter(m=>m.round===round),RCL);
+}
+async function setAdminKOResult(mid,val){
+  GD.koResults[mid]=val;
+  await adminSave();
+  renderAdminKO();
+}
+
+// ── Admin: Tournament Winner ─────────────────────────────
+function renderAdminTW(){
+  const cont=document.getElementById('tab-awinner');
+  const opts=`<option value="">— Select actual winner —</option>`+ALL_TEAMS.map(t=>`<option value="${t}"${t===GD.twActual?' selected':''}>${t}</option>`).join('');
+  const playerCards=GD.players.map(pname=>{
+    const pred=GD.predictions[pname]?.tw||'';
+    const pts=calcPoints(pname).tw;
+    const cls=GD.twActual&&pred?(pred.toLowerCase()===GD.twActual.toLowerCase()?'correct':'wrong'):'';
+    const init=pname.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    return `<div class="tw-card">
+      <div class="tw-player"><div class="tw-avatar">${init}</div>${pname}</div>
+      <div class="tw-select ${cls}" style="padding:6px;font-size:.82rem;font-weight:600;">${pred||'—'}</div>
+      <div class="tw-points" style="color:${pts?'#1a6b3c':GD.twActual&&pred?'#c62828':'#888'}">${GD.twActual&&pred?(pts?'✅ +10 pts':'❌ 0 pts'):'&nbsp;'}</div>
+    </div>`;
+  }).join('');
+  cont.innerHTML=`
+    <div class="tw-actual-wrap">
+      <h3>🌍 Who Lifts the Trophy?</h3>
+      <p>Set the actual winner to award bonus points</p>
+      <select class="tw-actual-select" onchange="setAdminTWActual(this.value)">${opts}</select>
+    </div>
+    <div class="tw-grid">${playerCards}</div>`;
+}
+async function setAdminTWActual(val){
+  GD.twActual=val;
+  await adminSave();
+  renderAdminTW();
+}
+
+// ══ UTILS ═════════════════════════════════════════════════
+function copyText(text,btn){
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig=btn.textContent;btn.textContent='✓';
+    setTimeout(()=>btn.textContent=orig,1800);
+  });
+}
+
+init();
+</script>
+</body>
+</html>
