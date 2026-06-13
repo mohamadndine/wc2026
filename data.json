@@ -17,5 +17,70 @@
   "thirdsActual": [],
   "koResults": {},
   "twActual": "",
-  "predictions": {}
+  "predictions": {
+    "Mohamad": {
+      "qual": {
+        "A": [
+          "Mexico",
+          "South Korea"
+        ],
+        "B": [
+          "Canada",
+          "Switzerland"
+        ],
+        "C": [
+          "Brazil",
+          "Morocco"
+        ],
+        "D": [
+          "USA",
+          "Australia"
+        ],
+        "E": [
+          "Germany",
+          "Ivory Coast"
+        ],
+        "F": [
+          "Netherlands",
+          "Japan"
+        ],
+        "G": [
+          "Belgium",
+          "Iran"
+        ],
+        "H": [
+          "Spain",
+          "Uruguay"
+        ],
+        "I": [
+          "France",
+          "Senegal"
+        ],
+        "J": [
+          "Argentina",
+          "Algeria"
+        ],
+        "K": [
+          "Portugal",
+          "Colombia"
+        ],
+        "L": [
+          "England",
+          "Croatia"
+        ]
+      },
+      "thirds": {
+        "A": "Czechia",
+        "B": "Bosnia-Herzegovina",
+        "D": "Türkiye",
+        "E": "Ecuador",
+        "I": "Norway",
+        "H": "Saudi Arabia",
+        "G": "Egypt",
+        "F": "Tunisia"
+      },
+      "ko": {},
+      "tw": ""
+    }
+  }
 }
