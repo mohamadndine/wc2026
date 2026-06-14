@@ -270,12 +270,19 @@ tbody td:nth-child(2){text-align:left;}
 
 <script>
 // ══ CONFIG — EDIT THESE ══════════════════════════════════════════════════
-// After creating your GitHub repo, fill in these three values:
-const GH_OWNER  = 'mohamadndine';   // e.g. 'john'
-const GH_REPO   = 'wc2026';          // e.g. 'wc2026'
-const DATA_FILE = 'data.json';               // don't change this
-const ADMIN_PASSWORD = 'WorldCupPass@123'; // pick any password
+const GH_OWNER  = 'YOUR_GITHUB_USERNAME';
+const GH_REPO   = 'YOUR_REPO_NAME';
+const DATA_FILE = 'data.json';
+const ADMIN_PASSWORD = 'YOUR_ADMIN_PASSWORD';
 
+// Prediction deadline: June 17 2025 22:00 ET = UTC-4 in summer → 02:00 UTC June 18
+const PREDICTION_DEADLINE = new Date('2025-06-18T02:00:00Z');
+
+// Knockout auto-unlock schedule (ET = UTC-4 in summer)
+// Round of 32: June 28 15:00 ET = 19:00 UTC
+const R32_UNLOCK = new Date('2025-06-28T19:00:00Z');
+// Round of 16: July 4 13:00 ET = 17:00 UTC
+const R16_UNLOCK = new Date('2025-07-04T17:00:00Z');
 // ════════════════════════════════════════════════════════════════════════
 
 const GROUPS={
@@ -324,7 +331,19 @@ let isAdmin = false;
 let PP = { qual:{}, thirds:{}, ko:{}, tw:'' }; // player's local picks
 let currentKORound = 'Round of 32';
 
-// ══ GITHUB API ════════════════════════════════════════════════════════════
+// ══ TIME HELPERS ══════════════════════════════════════════════════════════
+function isPredictionLocked(){ return new Date() >= PREDICTION_DEADLINE; }
+function isR32Unlocked(){ return new Date() >= R32_UNLOCK; }
+function isR16Unlocked(){ return new Date() >= R16_UNLOCK; }
+
+// Which KO rounds are currently open for player picks
+function unlockedKORounds(){
+  const rounds = [];
+  if(isR32Unlocked()) rounds.push('Round of 32');
+  if(isR16Unlocked()) rounds.push('Round of 16','Quarter-finals','Semi-finals','3rd Place','Final');
+  return rounds;
+}
+function isKORoundUnlocked(round){ return unlockedKORounds().includes(round); }
 const API = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${DATA_FILE}`;
 
 async function ghRead(){
@@ -350,9 +369,14 @@ async function ghRead(){
 
 async function ghWrite(data){
   if(!ghToken) throw new Error('No token');
+  // Use TextEncoder → Uint8Array → base64 to avoid double-encoding of UTF-8 characters
+  const json = JSON.stringify(data, null, 2);
+  const bytes = new TextEncoder().encode(json);
+  let binary = '';
+  bytes.forEach(b => binary += String.fromCharCode(b));
   const body = {
     message: `Update predictions ${new Date().toISOString()}`,
-    content: btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2)))),
+    content: btoa(binary),
     sha: ghFileSha
   };
   const r = await fetch(API, {
@@ -446,7 +470,7 @@ function showMain(html){
   document.getElementById('main-content').innerHTML = html;
 }
 
-// ══ HOME (player picker) ═══════════════════════════════════════════════════
+// ══ HOME (player picker with password) ════════════════════════════════════
 function showHome(){
   document.getElementById('admin-nav').style.display='none';
   document.getElementById('player-nav').style.display='none';
@@ -455,24 +479,85 @@ function showHome(){
   document.getElementById('player-badge').style.display='none';
   isAdmin = false;
 
-  const playerBtns = GD.players.map(name=>{
+  const locked = isPredictionLocked();
+  const playerBtns = GD.players.map(p=>{
+    const name = typeof p === 'string' ? p : p.name;
     const hasSubmitted = !!GD.predictions[name];
-    return `<button class="player-select-btn" onclick="loginAsPlayer('${name.replace(/'/g,"\\'")}')">
+    return `<button class="player-select-btn" onclick="showPlayerLogin('${name.replace(/'/g,"\\'")}')">
       <div class="avatar">${name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase()}</div>
       <span>${name}</span>
       <span class="status-tag ${hasSubmitted?'status-submitted':'status-pending'}">${hasSubmitted?'✅ Submitted':'Pending'}</span>
     </button>`;
   }).join('');
 
+  const deadlineBanner = locked
+    ? `<div style="background:#fff0f0;border:1px solid var(--red);border-radius:8px;padding:.7rem 1rem;margin-bottom:1rem;font-size:.8rem;color:var(--red);font-weight:600;">🔒 Predictions are locked — the deadline has passed.</div>`
+    : `<div style="background:#fff8e7;border:1px solid var(--gold);border-radius:8px;padding:.7rem 1rem;margin-bottom:1rem;font-size:.78rem;color:#856404;">⏰ Predictions lock on <strong>June 17 at 10:00 PM ET</strong></div>`;
+
   showMain(`<div class="home-card">
     <h2>⚽ Who are you?</h2>
-    <p>Select your name to enter or update your predictions. All picks are saved automatically when you submit.</p>
-    <div class="player-select-list">${playerBtns||'<p style="color:var(--gray-mid);font-size:.85rem">No players added yet. Ask the admin to set up the game.</p>'}</div>
-    <div style="text-align:center;padding-top:.75rem;border-top:1px solid #eee;">
-      <button onclick="showLeaderboard()" class="btn btn-green" style="margin-bottom:.5rem;width:100%;">🏆 View Leaderboard</button>
+    ${deadlineBanner}
+    <p style="margin-bottom:.9rem;">Select your name then enter your password to access your predictions.</p>
+    <div class="player-select-list">${playerBtns||'<p style="color:var(--gray-mid);font-size:.85rem">No players added yet.</p>'}</div>
+    <div style="padding-top:.75rem;border-top:1px solid #eee;">
+      <button onclick="showLeaderboard()" class="btn btn-green btn-full">🏆 View Leaderboard</button>
     </div>
     <div class="admin-link"><button onclick="location.hash='admin';showAdminLogin()">Admin access →</button></div>
   </div>`);
+}
+
+function showPlayerLogin(name){
+  const hasPass = GD.playerPasswords && GD.playerPasswords[name];
+  showMain(`<div class="home-card">
+    <h2>👤 ${name}</h2>
+    <p style="margin-bottom:1rem;">${hasPass ? 'Enter your password to access your predictions.' : 'Set a password to protect your predictions.'}</p>
+    <input type="password" id="player-pw-input" placeholder="${hasPass?'Password':'Choose a password'}"
+      style="width:100%;padding:10px 14px;border:1.5px solid #d0d0cc;border-radius:8px;font-family:'Inter',sans-serif;font-size:1rem;margin-bottom:.75rem;"
+      onkeydown="if(event.key==='Enter')submitPlayerLogin('${name.replace(/'/g,"\\'")}')">
+    <button class="btn btn-green btn-full" onclick="submitPlayerLogin('${name.replace(/'/g,"\\'")}')">
+      ${hasPass ? '🔓 Login' : '✅ Set Password & Continue'}
+    </button>
+    <div id="player-login-error" style="margin-top:.5rem;font-size:.8rem;color:var(--red);font-weight:600;"></div>
+    <div style="margin-top:.75rem;">
+      <button class="btn btn-gray btn-full" onclick="showHome()">← Back</button>
+    </div>
+  </div>`);
+  setTimeout(()=>document.getElementById('player-pw-input')?.focus(),100);
+}
+
+async function submitPlayerLogin(name){
+  const pw = document.getElementById('player-pw-input').value;
+  const errEl = document.getElementById('player-login-error');
+  if(!pw){ errEl.textContent='Please enter a password.'; return; }
+
+  if(!GD.playerPasswords) GD.playerPasswords = {};
+  const stored = GD.playerPasswords[name];
+
+  if(!stored){
+    // First time — set the password
+    if(pw.length < 3){ errEl.textContent='Password must be at least 3 characters.'; return; }
+    // Need token to save the password
+    if(!ghToken){
+      const tok = prompt('Enter the game token to save your password:');
+      if(!tok){ errEl.textContent='Token required to save password.'; return; }
+      ghToken = tok.trim();
+      sessionStorage.setItem('gh_token', ghToken);
+    }
+    try {
+      GD = await ghRead();
+      if(!GD.playerPasswords) GD.playerPasswords = {};
+      GD.playerPasswords[name] = pw;
+      await ghWrite(GD);
+      loginAsPlayer(name);
+    } catch(e){
+      errEl.textContent = '❌ Could not save password: ' + e.message;
+      ghToken=''; sessionStorage.removeItem('gh_token');
+    }
+  } else {
+    // Check password
+    if(pw !== stored){ errEl.textContent='❌ Incorrect password.'; return; }
+    loginAsPlayer(name);
+  }
 }
 
 // ══ LEADERBOARD (public) ═══════════════════════════════════════════════════
@@ -513,7 +598,6 @@ function showLeaderboard(){
 function loginAsPlayer(name){
   currentPlayer = name;
   isAdmin = false;
-  // Load existing predictions if any
   if(GD.predictions[name]){
     const saved = GD.predictions[name];
     PP.qual   = saved.qual   || {};
@@ -527,9 +611,9 @@ function loginAsPlayer(name){
   document.getElementById('player-badge').textContent = `👤 ${name}`;
   document.getElementById('player-badge').style.display = 'inline-block';
   document.getElementById('player-nav').style.display = 'flex';
-  document.getElementById('sticky-submit').style.display = 'block';
+  // Only show sticky submit if predictions not locked
+  document.getElementById('sticky-submit').style.display = isPredictionLocked() ? 'none' : 'block';
   applyPlayerNavLock();
-  // Clear main and show panels
   showMain(playerPanelsHTML());
   showPlayerTab('pq', document.querySelector('#player-nav button'));
 }
@@ -537,11 +621,16 @@ function loginAsPlayer(name){
 function applyPlayerNavLock(){
   const pkBtn=document.getElementById('nav-pk');
   const pwBtn=document.getElementById('nav-pw');
-  if(GD.unlocked){
+  const anyKOOpen = unlockedKORounds().length > 0;
+  if(anyKOOpen){
     pkBtn.classList.remove('locked'); pkBtn.style.pointerEvents='';
-    pwBtn.classList.remove('locked'); pwBtn.style.pointerEvents='';
   } else {
     pkBtn.classList.add('locked'); pkBtn.style.pointerEvents='none';
+  }
+  // Cup winner: unlock when R16 opens (same time as later rounds)
+  if(isR16Unlocked()){
+    pwBtn.classList.remove('locked'); pwBtn.style.pointerEvents='';
+  } else {
     pwBtn.classList.add('locked'); pwBtn.style.pointerEvents='none';
   }
 }
@@ -556,7 +645,8 @@ function playerPanelsHTML(){
 }
 
 function showPlayerTab(tab, btn){
-  if((tab==='pk'||tab==='pw')&&!GD.unlocked) return;
+  if(tab==='pk' && unlockedKORounds().length===0) return;
+  if(tab==='pw' && !isR16Unlocked()) return;
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('#player-nav button').forEach(b=>b.classList.remove('active'));
   const el = document.getElementById('tab-'+tab);
@@ -576,19 +666,24 @@ function goSubmit(){
 
 // ── Player: Qualifiers ──────────────────────────────────
 function renderPlayerQualifiers(){
+  const locked = isPredictionLocked();
   const cont = document.getElementById('tab-pq');
+  const lockBanner = locked ? `<div style="background:#fff0f0;border:1px solid var(--red);border-radius:8px;padding:.65rem 1rem;margin-bottom:.9rem;font-size:.8rem;color:var(--red);font-weight:600;">🔒 Predictions are locked — deadline has passed. These are your saved picks.</div>` : '';
   let html=`<div class="player-intro">
     <h2>🎯 Group Qualifier Picks</h2>
     <p>Pick the 2 teams qualifying from each group. <strong>3 pts</strong> per correct pick.</p>
     <div class="progress-bar-wrap"><div class="progress-bar" id="pq-bar" style="width:0%;background:var(--green)"></div></div>
     <div class="progress-label" id="pq-label">0 / 24 picks made</div>
-  </div>`;
+  </div>${lockBanner}`;
   html += GROUP_KEYS.map(g=>{
     const teams=GROUPS[g];
     const picks=PP.qual[g]||['',''];
     const selects=[0,1].map(idx=>{
       const sel=picks[idx]||'';
       const other=picks[1-idx]||'';
+      if(locked){
+        return `<div class="player-qual-pick" style="background:#f7f6f2;border-color:#ddd;color:var(--gray-dark);font-weight:600;display:flex;align-items:center;">${sel||'—'}</div>`;
+      }
       const opts=`<option value="">— Qualifier ${idx+1} —</option>`+
         teams.map(t=>`<option value="${t}"${t===sel?' selected':''}${t===other&&other?' disabled':''}>${t}${t===other&&other?' ✗':''}</option>`).join('');
       return `<select class="player-qual-pick" onchange="setPlayerQual('${g}',${idx},this.value)">${opts}</select>`;
@@ -624,29 +719,39 @@ function updateQualProgress(){
 // ── Player: Best 3rds ────────────────────────────────────
 function renderPlayerThirds(){
   if(Array.isArray(PP.thirds))PP.thirds={};
+  const locked = isPredictionLocked();
   const qualPicked=new Set();
   for(const g of GROUP_KEYS)(PP.qual[g]||[]).forEach(t=>{if(t)qualPicked.add(t);});
   const totalPicked=GROUP_KEYS.filter(g=>PP.thirds[g]).length;
   const maxReached=totalPicked>=8;
   const cont=document.getElementById('tab-pt');
+  const lockBanner = locked ? `<div style="background:#fff0f0;border:1px solid var(--red);border-radius:8px;padding:.65rem 1rem;margin-bottom:.9rem;font-size:.8rem;color:var(--red);font-weight:600;">🔒 Predictions are locked. These are your saved picks.</div>` : '';
   let html=`<div class="player-intro" style="margin-bottom:1.1rem;">
     <h2>3️⃣ Best 3rd Place Teams</h2>
     <p>Choose <strong>8 teams</strong> across any groups that you think finish 3rd and advance. Teams picked as qualifiers are excluded. <strong>1 pt</strong> each.</p>
     <div class="progress-bar-wrap"><div class="progress-bar" id="pt-bar" style="width:0%;background:var(--purple)"></div></div>
     <div class="progress-label" id="pt-label">0 / 8 picks made</div>
-  </div>`;
+  </div>${lockBanner}`;
   html+=GROUP_KEYS.map(g=>{
     const teams=GROUPS[g];
     const sel=PP.thirds[g]||'';
     const status=sel?'✅':'⬜';
-    const btns=teams.map(t=>{
-      const isQual=qualPicked.has(t);
-      const isSel=t===sel;
-      const capLocked=!isSel&&maxReached&&!isQual;
-      const cls=isQual?'thirds-team-btn qualifier':isSel?'thirds-team-btn selected':capLocked?'thirds-team-btn cap-locked':'thirds-team-btn';
-      const dis=isQual||capLocked?'disabled':'';
-      return `<button class="${cls}" ${dis} onclick="setPlayerThird('${g}','${t}')">${t}${isQual?' 🚫':''}</button>`;
-    }).join('');
+    let btns;
+    if(locked){
+      btns=teams.map(t=>{
+        const isSel=t===sel;
+        return `<div class="thirds-team-btn${isSel?' selected':''}" style="cursor:default;${isSel?'':'opacity:.4'}">${t}</div>`;
+      }).join('');
+    } else {
+      btns=teams.map(t=>{
+        const isQual=qualPicked.has(t);
+        const isSel=t===sel;
+        const capLocked=!isSel&&maxReached&&!isQual;
+        const cls=isQual?'thirds-team-btn qualifier':isSel?'thirds-team-btn selected':capLocked?'thirds-team-btn cap-locked':'thirds-team-btn';
+        const dis=isQual||capLocked?'disabled':'';
+        return `<button class="${cls}" ${dis} onclick="setPlayerThird('${g}','${t}')">${t}${isQual?' 🚫':''}</button>`;
+      }).join('');
+    }
     return `<div class="thirds-group-block">
       <div class="thirds-group-hdr"><h3>${status} Group ${g}</h3><span class="badge">${sel?`✓ ${sel}`:'Pick one'}</span></div>
       <div class="thirds-group-body"><div class="thirds-team-btns">${btns}</div></div>
@@ -666,43 +771,51 @@ function setPlayerThird(g,val){
 // ── Player: Knockouts ────────────────────────────────────
 function renderPlayerKO(){
   const cont=document.getElementById('tab-pk');
-  if(!GD.unlocked){cont.innerHTML=lockedMsg('Knockouts','The admin will unlock this after the group stage.');return;}
+  const openRounds = unlockedKORounds();
+  if(openRounds.length===0){
+    const r32date='June 28 at 3:00 PM ET';
+    cont.innerHTML=lockedMsg('Knockouts',`Round of 32 predictions open on <strong>${r32date}</strong>.`);
+    return;
+  }
+  // Default to first open round
+  if(!openRounds.includes(currentKORound)) currentKORound = openRounds[0];
   const RCL={'Round of 32':'#c0392b','Round of 16':'#e67e22','Quarter-finals':'#8b1a1a','Semi-finals':'#5b21b6','3rd Place':'#555','Final':'#c9a84c'};
   const matches=KO_MATCHES.filter(m=>m.round===currentKORound);
   cont.innerHTML=`
     <div class="sec-hdr"><h2>🥊 Knockout Predictions</h2><span class="pill">3 pts per correct winner</span></div>
     <div class="ko-subtabs" id="pko-tabs">
-      ${KO_DEF.map((r,i)=>`<button class="ko-subtab ${r.cls.replace('ko-','')}${i===0?' active':''}" onclick="setPlayerKORound('${r.key}',this)">${r.key==='Final'?'⭐ Final':r.key==='3rd Place'?'3rd':r.key}</button>`).join('')}
+      ${KO_DEF.map(r=>{
+        const open=openRounds.includes(r.key);
+        const active=r.key===currentKORound?' active':'';
+        const label=r.key==='Final'?'⭐ Final':r.key==='3rd Place'?'3rd':r.key;
+        if(!open) return `<button class="ko-subtab ${r.cls.replace('ko-','')} locked" disabled title="Not yet unlocked" style="opacity:.35;cursor:not-allowed;">${label} 🔒</button>`;
+        return `<button class="ko-subtab ${r.cls.replace('ko-','')}${active}" onclick="setPlayerKORound('${r.key}',this)">${label}</button>`;
+      }).join('')}
     </div>
-    <div class="match-grid" id="pko-grid">${matches.map(m=>{
-      const pred=PP.ko[m.id]||'';
-      const opts=`<option value="">— Pick winner —</option>`+ALL_TEAMS.map(t=>`<option value="${t}"${t===pred?' selected':''}>${t}</option>`).join('');
-      return `<div class="match-card ${m.cls}">
-        <div class="match-round-label" style="color:${RCL[m.round]}">${m.round} · ${m.label}</div>
-        <select class="pred-select" style="width:100%;margin-top:4px;" onchange="PP.ko['${m.id}']=this.value">${opts}</select>
-      </div>`;
-    }).join('')}</div>`;
+    <div class="match-grid" id="pko-grid">${renderPlayerKOGrid(matches,RCL)}</div>`;
+}
+function renderPlayerKOGrid(matches,RCL){
+  return matches.map(m=>{
+    const pred=PP.ko[m.id]||'';
+    const opts=`<option value="">— Pick winner —</option>`+ALL_TEAMS.map(t=>`<option value="${t}"${t===pred?' selected':''}>${t}</option>`).join('');
+    return `<div class="match-card ${m.cls}">
+      <div class="match-round-label" style="color:${RCL[m.round]}">${m.round} · ${m.label}</div>
+      <select class="pred-select" style="width:100%;margin-top:4px;" onchange="PP.ko['${m.id}']=this.value">${opts}</select>
+    </div>`;
+  }).join('');
 }
 function setPlayerKORound(round,btn){
   currentKORound=round;
   document.querySelectorAll('#pko-tabs .ko-subtab').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   const RCL={'Round of 32':'#c0392b','Round of 16':'#e67e22','Quarter-finals':'#8b1a1a','Semi-finals':'#5b21b6','3rd Place':'#555','Final':'#c9a84c'};
-  const matches=KO_MATCHES.filter(m=>m.round===round);
-  document.getElementById('pko-grid').innerHTML=matches.map(m=>{
-    const pred=PP.ko[m.id]||'';
-    const opts=`<option value="">— Pick winner —</option>`+ALL_TEAMS.map(t=>`<option value="${t}"${t===pred?' selected':''}>${t}</option>`).join('');
-    return `<div class="match-card ${m.cls}">
-      <div class="match-round-label" style="color:${RCL[round]}">${round} · ${m.label}</div>
-      <select class="pred-select" style="width:100%;margin-top:4px;" onchange="PP.ko['${m.id}']=this.value">${opts}</select>
-    </div>`;
-  }).join('');
+  document.getElementById('pko-grid').innerHTML=renderPlayerKOGrid(KO_MATCHES.filter(m=>m.round===round),RCL);
 }
 
 // ── Player: Tournament Winner ────────────────────────────
 function renderPlayerTW(){
   const cont=document.getElementById('tab-pw');
-  if(!GD.unlocked){cont.innerHTML=lockedMsg('Cup Winner','The admin will unlock this after the group stage.');return;}
+  if(!isR16Unlocked()){cont.innerHTML=lockedMsg('Cup Winner','Opens July 4 at 1:00 PM ET.');return;}
   const opts=`<option value="">— Pick the winner —</option>`+ALL_TEAMS.map(t=>`<option value="${t}"${t===PP.tw?' selected':''}>${t}</option>`).join('');
   cont.innerHTML=`<div class="player-section">
     <div class="player-section-hdr gold"><h3>🌍 Tournament Winner</h3><span class="badge">10 pts if correct</span></div>
@@ -720,8 +833,17 @@ function lockedMsg(title,msg){
 
 // ── Submit ───────────────────────────────────────────────
 function renderSubmit(){
-  const errors=validatePredictions();
   const cont=document.getElementById('tab-psubmit');
+  // If predictions are locked, show read-only summary
+  if(isPredictionLocked()){
+    cont.innerHTML=`<div class="submit-card">
+      <h3>🔒 Predictions Locked</h3>
+      <p>The prediction deadline (June 17 at 10:00 PM ET) has passed. Your saved predictions are shown above in read-only mode.</p>
+      ${GD.predictions[currentPlayer]?'<div style="margin-top:.75rem;padding:.75rem 1rem;background:#d4edda;border-radius:8px;font-size:.85rem;color:#1a6b3c;font-weight:600;">✅ Your predictions were submitted before the deadline.</div>':'<div style="margin-top:.75rem;padding:.75rem 1rem;background:#fff0f0;border-radius:8px;font-size:.85rem;color:var(--red);font-weight:600;">⚠️ No predictions were saved before the deadline.</div>'}
+    </div>`;
+    return;
+  }
+  const errors=validatePredictions();
   const errHtml=errors.length?`<div class="val-error">⚠ Please fix these before submitting:<ul>${errors.map(e=>`<li>${e}</li>`).join('')}</ul></div>`:'';
   const tokenSection=!ghToken?`
     <div style="margin-bottom:.9rem;padding:.85rem 1rem;background:#fff8e7;border:1px solid var(--gold);border-radius:10px;">
@@ -731,7 +853,7 @@ function renderSubmit(){
     </div>`:'';
   cont.innerHTML=`<div class="submit-card">
     <h3>📤 Submit Your Predictions</h3>
-    <p>Click below to save your predictions to the game. You can come back and update them anytime before the tournament starts.</p>
+    <p>Click below to save your predictions. You can update them anytime before <strong>June 17 at 10:00 PM ET</strong>.</p>
     <div id="submit-errors">${errHtml}</div>
     ${tokenSection}
     <button class="btn btn-gold btn-full" style="font-size:.95rem;padding:.8rem;" onclick="submitPredictions()" ${errors.length?'disabled style="opacity:.5;cursor:not-allowed;font-size:.95rem;padding:.8rem;"':''}>
@@ -889,12 +1011,11 @@ function renderAdminSetup(){
     <div class="player-list">${inputs}</div>
     <button class="btn btn-green btn-full" onclick="adminSavePlayers()">💾 Save Players</button>
     <div id="asetup-status" class="save-status"></div>
-    <div class="unlock-row" style="margin-top:1rem;">
-      <label>🔓 Unlock Knockouts &amp; Cup Winner for players</label>
-      <label class="toggle-switch">
-        <input type="checkbox" id="unlock-toggle" ${GD.unlocked?'checked':''} onchange="adminToggleUnlock(this.checked)">
-        <span class="toggle-slider"></span>
-      </label>
+    <div style="margin-top:1rem;padding:.75rem 1rem;background:#f0faf4;border:1px solid var(--green);border-radius:10px;font-size:.82rem;color:#1a6b3c;">
+      <strong>⏰ Auto-unlock schedule:</strong><br>
+      🔒 Predictions lock: June 17 at 10:00 PM ET<br>
+      🥊 Round of 32 opens: June 28 at 3:00 PM ET<br>
+      🥊 Round of 16+ opens: July 4 at 1:00 PM ET
     </div>
     <div style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid #e8e8e4;">
       <h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--green);margin-bottom:.5rem;">📤 Player Links</h3>
