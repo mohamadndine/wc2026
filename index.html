@@ -1358,9 +1358,11 @@ async function setAdminTWActual(val){
 }
 
 // ══ LIVE SCORES ══════════════════════════════════════════════════════════
-const SCORES_API='https://worldcup26.ir/get/games';
+// openfootball/worldcup.json — free, no API key, no auth
+// Schema: { rounds: [{ name, matches: [{ date, time, team1:{name,code}, team2:{name,code}, score1, score2, score1i, score2i, goals1, goals2, group, stadium:{name}, city, timezone }] }] }
+const SCORES_API='https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
 let scoresData=[],scoreFilter='all',scoreRefreshTimer=null;
-const FLAGS={'Mexico':'🇲🇽','South Korea':'🇰🇷','South Africa':'🇿🇦','Czechia':'🇨🇿','Canada':'🇨🇦','Bosnia-Herzegovina':'🇧🇦','Qatar':'🇶🇦','Switzerland':'🇨🇭','Brazil':'🇧🇷','Morocco':'🇲🇦','Haiti':'🇭🇹','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','USA':'🇺🇸','Paraguay':'🇵🇾','Australia':'🇦🇺','Türkiye':'🇹🇷','Germany':'🇩🇪','Curaçao':'🏝️','Ivory Coast':'🇨🇮','Ecuador':'🇪🇨','Netherlands':'🇳🇱','Japan':'🇯🇵','Sweden':'🇸🇪','Tunisia':'🇹🇳','Belgium':'🇧🇪','Egypt':'🇪🇬','Iran':'🇮🇷','New Zealand':'🇳🇿','Spain':'🇪🇸','Cape Verde':'🇨🇻','Saudi Arabia':'🇸🇦','Uruguay':'🇺🇾','France':'🇫🇷','Senegal':'🇸🇳','Iraq':'🇮🇶','Norway':'🇳🇴','Argentina':'🇦🇷','Algeria':'🇩🇿','Austria':'🇦🇹','Jordan':'🇯🇴','Portugal':'🇵🇹','Congo DR':'🇨🇩','Uzbekistan':'🇺🇿','Colombia':'🇨🇴','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Croatia':'🇭🇷','Ghana':'🇬🇭','Panama':'🇵🇦'};
+const FLAGS={'Mexico':'🇲🇽','South Korea':'🇰🇷','South Africa':'🇿🇦','Czechia':'🇨🇿','Czech Republic':'🇨🇿','Canada':'🇨🇦','Bosnia-Herzegovina':'🇧🇦','Bosnia and Herzegovina':'🇧🇦','Qatar':'🇶🇦','Switzerland':'🇨🇭','Brazil':'🇧🇷','Morocco':'🇲🇦','Haiti':'🇭🇹','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','USA':'🇺🇸','United States':'🇺🇸','Paraguay':'🇵🇾','Australia':'🇦🇺','Türkiye':'🇹🇷','Turkey':'🇹🇷','Germany':'🇩🇪','Curaçao':'🏝️','Curacao':'🏝️','Ivory Coast':'🇨🇮',"Côte d'Ivoire":'🇨🇮','Ecuador':'🇪🇨','Netherlands':'🇳🇱','Japan':'🇯🇵','Sweden':'🇸🇪','Tunisia':'🇹🇳','Belgium':'🇧🇪','Egypt':'🇪🇬','Iran':'🇮🇷','New Zealand':'🇳🇿','Spain':'🇪🇸','Cape Verde':'🇨🇻','Saudi Arabia':'🇸🇦','Uruguay':'🇺🇾','France':'🇫🇷','Senegal':'🇸🇳','Iraq':'🇮🇶','Norway':'🇳🇴','Argentina':'🇦🇷','Algeria':'🇩🇿','Austria':'🇦🇹','Jordan':'🇯🇴','Portugal':'🇵🇹','Congo DR':'🇨🇩','DR Congo':'🇨🇩','Uzbekistan':'🇺🇿','Colombia':'🇨🇴','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Croatia':'🇭🇷','Ghana':'🇬🇭','Panama':'🇵🇦'};
 function flag(n){return FLAGS[n]||'🏳️';}
 
 function showScores(){
@@ -1374,7 +1376,7 @@ function showScores(){
   location.hash='scores';
   fetchScores();
   stopScoreRefresh();
-  scoreRefreshTimer=setInterval(fetchScores,60000);
+  scoreRefreshTimer=setInterval(fetchScores,120000); // refresh every 2 mins
 }
 function stopScoreRefresh(){
   if(scoreRefreshTimer){clearInterval(scoreRefreshTimer);scoreRefreshTimer=null;}
@@ -1387,15 +1389,24 @@ async function fetchScores(){
   if(!grid)return;
   if(lbl)lbl.textContent='Refreshing…';
   try{
+    // Cache-bust so we always get fresh data
     const r=await fetch(SCORES_API+'?t='+Date.now());
-    if(!r.ok)throw new Error('API '+r.status);
+    if(!r.ok)throw new Error('HTTP '+r.status);
     const json=await r.json();
-    scoresData=Array.isArray(json)?json:(json.data||json.games||json.matches||[]);
+    // openfootball schema: { rounds: [{ name, matches:[...] }] }
+    // Flatten all matches from all rounds, attach round name
+    const rounds=json.rounds||[];
+    scoresData=[];
+    for(const round of rounds){
+      for(const m of (round.matches||[])){
+        scoresData.push({...m, _round: round.name});
+      }
+    }
     renderScores();
     const t=new Date();
     if(lbl)lbl.textContent='Updated '+t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   }catch(e){
-    if(grid)grid.innerHTML=`<div class="no-matches"><div class="nm-icon">📡</div><p style="color:rgba(255,255,255,.5);font-size:.85rem;">Could not load scores — ${e.message}</p><button class="refresh-btn" style="margin:.75rem auto 0;" onclick="fetchScores()">Try again</button></div>`;
+    if(grid)grid.innerHTML=`<div class="no-matches"><div class="nm-icon">📡</div><p style="color:rgba(255,255,255,.5);font-size:.85rem;">Could not load scores.<br>${e.message}</p><button class="refresh-btn" style="margin:.75rem auto 0;" onclick="fetchScores()">Try again</button></div>`;
     if(lbl)lbl.textContent='Failed';
   }
 }
@@ -1405,58 +1416,108 @@ function setScoreFilter(f,btn){
   if(btn)btn.classList.add('active');
   renderScores();
 }
+
+// Determine match status from openfootball schema
+// score1/score2 present = finished; no score = upcoming
+// openfootball doesn't have live data, so we infer from date/time
 function getStatus(m){
-  const s=(m.status||m.state||'').toLowerCase();
-  if(s==='ht'||s.includes('half'))return'ht';
-  if(s.includes('live')||s==='1h'||s==='2h'||s==='in_play'||s==='inprogress')return'live';
-  if(s==='ft'||s==='finished'||s==='completed'||s==='ended'||s.includes('full'))return'ft';
-  return'upcoming';
+  const hasScore = m.score1 != null && m.score2 != null;
+  if(hasScore) return 'ft';
+  // Check if match time has passed (match is likely in progress or upcoming)
+  if(m.date && m.time){
+    // Parse date + time. openfootball times are local to stadium, approximate as UTC
+    // We just use date comparison — if today's date matches, show as "today"
+    const matchDate = new Date(m.date+'T'+m.time+':00Z');
+    const now = new Date();
+    const diffMins = (now - matchDate) / 60000;
+    if(diffMins > 0 && diffMins < 120) return 'live'; // within 2h window = possibly live
+  }
+  return 'upcoming';
 }
+
 function renderScores(){
   const grid=document.getElementById('scores-grid');
   if(!grid)return;
   const liveDot=document.getElementById('live-dot');
   const today=new Date().toISOString().slice(0,10);
+
   let matches=[...scoresData];
-  if(scoreFilter==='live')matches=matches.filter(m=>{const s=getStatus(m);return s==='live'||s==='ht';});
-  else if(scoreFilter==='ft')matches=matches.filter(m=>getStatus(m)==='ft');
-  else if(scoreFilter==='upcoming')matches=matches.filter(m=>getStatus(m)==='upcoming');
-  else if(scoreFilter==='today')matches=matches.filter(m=>(m.date||m.kickoff||m.datetime||'').slice(0,10)===today);
+  if(scoreFilter==='live') matches=matches.filter(m=>getStatus(m)==='live');
+  else if(scoreFilter==='ft') matches=matches.filter(m=>getStatus(m)==='ft');
+  else if(scoreFilter==='upcoming') matches=matches.filter(m=>getStatus(m)==='upcoming');
+  else if(scoreFilter==='today') matches=matches.filter(m=>(m.date||'').slice(0,10)===today);
+
+  // Sort: live first, ft by date desc (most recent first), upcoming by date asc
   matches.sort((a,b)=>{
-    const o={live:0,ht:0,ft:1,upcoming:2};
-    const sa=o[getStatus(a)]??2,sb=o[getStatus(b)]??2;
-    if(sa!==sb)return sa-sb;
-    return new Date(a.date||a.kickoff||0)-new Date(b.date||b.kickoff||0);
+    const order={live:0,ft:1,upcoming:2};
+    const sa=order[getStatus(a)]??2, sb=order[getStatus(b)]??2;
+    if(sa!==sb) return sa-sb;
+    const da=new Date(a.date||0), db=new Date(b.date||0);
+    // ft: newest first; upcoming: oldest first
+    return sa===1 ? db-da : da-db;
   });
-  const hasLive=scoresData.some(m=>{const s=getStatus(m);return s==='live'||s==='ht';});
-  if(liveDot)liveDot.style.display=hasLive?'block':'none';
-  if(!matches.length){grid.innerHTML=`<div class="no-matches"><div class="nm-icon">🕐</div><p style="color:rgba(255,255,255,.5)">No matches for this filter</p></div>`;return;}
+
+  const hasLive=scoresData.some(m=>getStatus(m)==='live');
+  if(liveDot) liveDot.style.display=hasLive?'block':'none';
+
+  if(!matches.length){
+    grid.innerHTML=`<div class="no-matches"><div class="nm-icon">🕐</div><p style="color:rgba(255,255,255,.5)">No matches for this filter</p></div>`;
+    return;
+  }
+
   grid.innerHTML=matches.map(m=>{
     const status=getStatus(m);
-    const home=m.home_team?.name||m.team1?.name||m.team1||m.home||'?';
-    const away=m.away_team?.name||m.team2?.name||m.team2||m.away||'?';
-    const hs=m.home_score??m.score?.home??m.score?.ft?.[0]??m.goals_home??null;
-    const as_=m.away_score??m.score?.away??m.score?.ft?.[1]??m.goals_away??null;
-    const min=m.minute||m.match_time||'';
-    const venue=m.stadium?.name||m.ground||m.venue||'';
-    const round=m.round||m.stage||m.group||'';
-    const ko=m.kickoff_utc||m.date||m.datetime||'';
-    const koFmt=ko?new Date(ko).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
-    const g1=m.goals1||m.home_goals||[];
-    const g2=m.goals2||m.away_goals||[];
-    const scorers=(g1.length||g2.length)?`<div class="scorers-list">${g1.map(g=>`${flag(home)} ${g.name||g.scorer||''} ${g.minute||g.min||''}'`).join(' &nbsp;')} ${g2.map(g=>`${flag(away)} ${g.name||g.scorer||''} ${g.minute||g.min||''}'`).join(' &nbsp;')}</div>`:'';
-    const badge=status==='live'?`<span class="score-status-badge badge-live">🔴 LIVE${min?' '+min+"'":''}` +`</span>`:status==='ht'?`<span class="score-status-badge badge-ht">⏸ HT</span>`:status==='ft'?`<span class="score-status-badge badge-ft">✅ FT</span>`:`<span class="score-status-badge badge-upcoming">${koFmt}</span>`;
-    const isPlayed=status==='live'||status==='ht'||status==='ft';
-    const scoreHtml=isPlayed?`<div class="score-nums"><div class="score-num${status==='live'?' live-num':''}">${hs??'?'}</div><div class="score-sep">–</div><div class="score-num${status==='live'?' live-num':''}">${as_??'?'}</div></div>`:`<div class="score-vs">vs</div>`;
+    // openfootball field names
+    const home=m.team1?.name||'?';
+    const away=m.team2?.name||'?';
+    const hs=m.score1;  // null if not played
+    const as_=m.score2;
+    const hshi=m.score1i; // half-time scores
+    const ashi=m.score2i;
+    const group=m.group||m._round||'';
+    const venue=m.stadium?.name||m.city||'';
+    const city=m.city||'';
+    const venueStr=[m.stadium?.name, city].filter(Boolean).join(', ');
+
+    // Date + time display
+    let kickoffStr='';
+    if(m.date){
+      const d=new Date(m.date+'T'+(m.time||'00:00')+':00');
+      kickoffStr=d.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    }
+
+    // Goal scorers
+    const g1=m.goals1||[];
+    const g2=m.goals2||[];
+    const scorers=(g1.length||g2.length)
+      ?`<div class="scorers-list">${[
+          ...g1.map(g=>`${flag(home)} <strong>${g.name}</strong> ${g.minute}'${g.offset?'+'+g.offset:''}`),
+          ...g2.map(g=>`${flag(away)} <strong>${g.name}</strong> ${g.minute}'${g.offset?'+'+g.offset:''}`)
+        ].join(' &nbsp;·&nbsp; ')}</div>`:'' ;
+
+    const badge = status==='live'
+      ? `<span class="score-status-badge badge-live">🔴 LIVE</span>`
+      : status==='ft'
+      ? `<span class="score-status-badge badge-ft">✅ FT${hshi!=null?` <span style="opacity:.6;font-size:.6rem;">(HT ${hshi}–${ashi})</span>`:''}</span>`
+      : `<span class="score-status-badge badge-upcoming">${kickoffStr}</span>`;
+
+    const scoreHtml = (status==='ft'||status==='live')
+      ? `<div class="score-nums">
+          <div class="score-num${status==='live'?' live-num':''}">${hs}</div>
+          <div class="score-sep">–</div>
+          <div class="score-num${status==='live'?' live-num':''}">${as_}</div>
+        </div>`
+      : `<div class="score-vs">${kickoffStr||'vs'}</div>`;
+
     return `<div class="score-card status-${status}">
-      <div class="score-card-header"><span class="score-round">${round}</span>${badge}</div>
+      <div class="score-card-header"><span class="score-round">${group}</span>${badge}</div>
       <div class="score-teams">
         <div class="score-team"><div class="score-flag">${flag(home)}</div><div class="score-team-name">${home}</div></div>
         ${scoreHtml}
         <div class="score-team"><div class="score-flag">${flag(away)}</div><div class="score-team-name">${away}</div></div>
       </div>
       ${scorers}
-      <div class="score-card-footer"><span class="score-venue">${venue}</span>${status==='upcoming'?`<span class="score-time">${koFmt}</span>`:''}</div>
+      <div class="score-card-footer"><span class="score-venue">${venueStr}</span></div>
     </div>`;
   }).join('');
 }
