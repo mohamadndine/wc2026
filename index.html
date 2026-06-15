@@ -19,7 +19,8 @@ body{font-family:'Inter',sans-serif;background:#0f2a1a;min-height:100vh;color:va
 header{background:linear-gradient(135deg,#0a1f12,#1a6b3c 60%,#0f3d22);padding:1.25rem 1rem 1rem;text-align:center;border-bottom:3px solid var(--gold);position:relative;overflow:hidden;}
 header::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 30px,rgba(255,255,255,.02) 30px,rgba(255,255,255,.02) 60px);}
 .header-badge{display:inline-block;background:var(--gold);color:#3a2600;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:3px 12px;border-radius:20px;margin-bottom:.4rem;}
-header h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.8rem,8vw,3.5rem);color:#fff;letter-spacing:2px;line-height:1;margin-bottom:.2rem;}
+header h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.8rem,8vw,3.5rem);color:#fff;letter-spacing:2px;line-height:1;margin-bottom:.2rem;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+header h1:hover{opacity:.85;}
 header h1 span{color:var(--gold);}
 header p{color:rgba(255,255,255,.65);font-size:.82rem;}
 .player-badge{display:inline-block;background:rgba(201,168,76,.2);border:1px solid var(--gold);color:var(--gold);font-size:.78rem;font-weight:600;padding:3px 12px;border-radius:20px;margin-top:.4rem;}
@@ -292,7 +293,7 @@ tbody td:nth-child(2){text-align:left;}
 <body>
 <header>
   <div class="header-badge">USA · Canada · Mexico · 2026</div>
-  <h1>⚽ World Cup <span>2026</span></h1>
+  <h1 onclick="showWelcome()" title="Back to home">⚽ World Cup <span>2026</span></h1>
   <p id="header-sub">Prediction Game</p>
   <div id="player-badge" class="player-badge" style="display:none"></div>
 </header>
@@ -357,7 +358,7 @@ tbody td:nth-child(2){text-align:left;}
 const GH_OWNER  = 'mohamadndine';
 const GH_REPO   = 'wc2026';
 const DATA_FILE = 'data.json';
-const ADMIN_PASSWORD = 'BrosWorldCup26';
+const ADMIN_PASSWORD = 'BrosWorldCup@123';
 
 // Prediction deadline: June 17 2026 22:00 ET = UTC-4 in summer → 02:00 UTC June 18
 const PREDICTION_DEADLINE = new Date('2026-06-18T02:00:00Z');
@@ -1389,19 +1390,13 @@ async function fetchScores(){
   if(!grid)return;
   if(lbl)lbl.textContent='Refreshing…';
   try{
-    // Cache-bust so we always get fresh data
     const r=await fetch(SCORES_API+'?t='+Date.now());
     if(!r.ok)throw new Error('HTTP '+r.status);
     const json=await r.json();
-    // openfootball schema: { rounds: [{ name, matches:[...] }] }
-    // Flatten all matches from all rounds, attach round name
-    const rounds=json.rounds||[];
-    scoresData=[];
-    for(const round of rounds){
-      for(const m of (round.matches||[])){
-        scoresData.push({...m, _round: round.name});
-      }
-    }
+    // Schema: { name, matches: [ { round, date, time, team1, team2, group, ground, score1, score2, goals1, goals2 } ] }
+    // team1/team2 are plain strings, NOT objects
+    // score1/score2 only present when match is played
+    scoresData = json.matches || [];
     renderScores();
     const t=new Date();
     if(lbl)lbl.textContent='Updated '+t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
@@ -1410,6 +1405,32 @@ async function fetchScores(){
     if(lbl)lbl.textContent='Failed';
   }
 }
+
+// Parse openfootball time "13:00 UTC-6" → UTC Date
+function parseMatchDate(dateStr, timeStr){
+  if(!dateStr) return null;
+  try{
+    const timePart = timeStr||'12:00 UTC+0';
+    const [hhmm, utcRaw] = timePart.split(' ');
+    const offset = parseInt((utcRaw||'+0').replace('UTC',''))||0;
+    const [hh,mm] = hhmm.split(':').map(Number);
+    const d = new Date(dateStr+'T00:00:00Z');
+    d.setUTCHours(hh - offset, mm, 0, 0); // convert local → UTC
+    return d;
+  }catch(e){ return new Date(dateStr); }
+}
+
+function getStatus(m){
+  // score1/score2 are present (even if 0) once a match is played
+  if(m.score1 != null && m.score2 != null) return 'ft';
+  const matchUTC = parseMatchDate(m.date, m.time);
+  if(!matchUTC) return 'upcoming';
+  const now = new Date();
+  const diffMins = (now - matchUTC) / 60000;
+  if(diffMins >= 0 && diffMins < 115) return 'live';
+  return 'upcoming';
+}
+
 function setScoreFilter(f,btn){
   scoreFilter=f;
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
@@ -1417,44 +1438,29 @@ function setScoreFilter(f,btn){
   renderScores();
 }
 
-// Determine match status from openfootball schema
-// score1/score2 present = finished; no score = upcoming
-// openfootball doesn't have live data, so we infer from date/time
-function getStatus(m){
-  const hasScore = m.score1 != null && m.score2 != null;
-  if(hasScore) return 'ft';
-  // Check if match time has passed (match is likely in progress or upcoming)
-  if(m.date && m.time){
-    // Parse date + time. openfootball times are local to stadium, approximate as UTC
-    // We just use date comparison — if today's date matches, show as "today"
-    const matchDate = new Date(m.date+'T'+m.time+':00Z');
-    const now = new Date();
-    const diffMins = (now - matchDate) / 60000;
-    if(diffMins > 0 && diffMins < 120) return 'live'; // within 2h window = possibly live
-  }
-  return 'upcoming';
-}
-
 function renderScores(){
   const grid=document.getElementById('scores-grid');
   if(!grid)return;
   const liveDot=document.getElementById('live-dot');
-  const today=new Date().toISOString().slice(0,10);
+
+  // today in local time (not UTC) so "today" matches what the user sees
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
   let matches=[...scoresData];
-  if(scoreFilter==='live') matches=matches.filter(m=>getStatus(m)==='live');
-  else if(scoreFilter==='ft') matches=matches.filter(m=>getStatus(m)==='ft');
-  else if(scoreFilter==='upcoming') matches=matches.filter(m=>getStatus(m)==='upcoming');
-  else if(scoreFilter==='today') matches=matches.filter(m=>(m.date||'').slice(0,10)===today);
 
-  // Sort: live first, ft by date desc (most recent first), upcoming by date asc
+  if(scoreFilter==='live')      matches=matches.filter(m=>getStatus(m)==='live');
+  else if(scoreFilter==='ft')   matches=matches.filter(m=>getStatus(m)==='ft');
+  else if(scoreFilter==='upcoming') matches=matches.filter(m=>getStatus(m)==='upcoming');
+  else if(scoreFilter==='today') matches=matches.filter(m=>(m.date||'')===todayStr);
+
   matches.sort((a,b)=>{
     const order={live:0,ft:1,upcoming:2};
     const sa=order[getStatus(a)]??2, sb=order[getStatus(b)]??2;
     if(sa!==sb) return sa-sb;
-    const da=new Date(a.date||0), db=new Date(b.date||0);
-    // ft: newest first; upcoming: oldest first
-    return sa===1 ? db-da : da-db;
+    const da=parseMatchDate(a.date,a.time)||0;
+    const db=parseMatchDate(b.date,b.time)||0;
+    return sa===1 ? db-da : da-db; // ft: newest first; upcoming: soonest first
   });
 
   const hasLive=scoresData.some(m=>getStatus(m)==='live');
@@ -1467,47 +1473,48 @@ function renderScores(){
 
   grid.innerHTML=matches.map(m=>{
     const status=getStatus(m);
-    // openfootball field names
-    const home=m.team1?.name||'?';
-    const away=m.team2?.name||'?';
-    const hs=m.score1;  // null if not played
-    const as_=m.score2;
-    const hshi=m.score1i; // half-time scores
-    const ashi=m.score2i;
-    const group=m.group||m._round||'';
-    const venue=m.stadium?.name||m.city||'';
-    const city=m.city||'';
-    const venueStr=[m.stadium?.name, city].filter(Boolean).join(', ');
 
-    // Date + time display
-    let kickoffStr='';
-    if(m.date){
-      const d=new Date(m.date+'T'+(m.time||'00:00')+':00');
-      kickoffStr=d.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-    }
+    // team1/team2 are plain strings in openfootball schema
+    const home = typeof m.team1==='string' ? m.team1 : (m.team1?.name||'?');
+    const away = typeof m.team2==='string' ? m.team2 : (m.team2?.name||'?');
 
-    // Goal scorers
+    const hs  = m.score1;
+    const as_ = m.score2;
+    const hshi = m.score1i;
+    const ashi = m.score2i;
+
+    const group  = m.group || m.round || '';
+    const ground = m.ground || '';
+
+    // Kickoff display in user's local time
+    const matchUTC = parseMatchDate(m.date, m.time);
+    const kickoffStr = matchUTC
+      ? matchUTC.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+      : m.date||'';
+
+    // Goal scorers: goals1/goals2 are arrays of {name, minute, offset?}
     const g1=m.goals1||[];
     const g2=m.goals2||[];
     const scorers=(g1.length||g2.length)
-      ?`<div class="scorers-list">${[
+      ? `<div class="scorers-list">${[
           ...g1.map(g=>`${flag(home)} <strong>${g.name}</strong> ${g.minute}'${g.offset?'+'+g.offset:''}`),
           ...g2.map(g=>`${flag(away)} <strong>${g.name}</strong> ${g.minute}'${g.offset?'+'+g.offset:''}`)
-        ].join(' &nbsp;·&nbsp; ')}</div>`:'' ;
+        ].join(' &nbsp;·&nbsp; ')}</div>` : '';
 
+    const htStr = hshi!=null ? ` <span style="opacity:.55;font-size:.6rem;">(HT ${hshi}–${ashi})</span>` : '';
     const badge = status==='live'
       ? `<span class="score-status-badge badge-live">🔴 LIVE</span>`
       : status==='ft'
-      ? `<span class="score-status-badge badge-ft">✅ FT${hshi!=null?` <span style="opacity:.6;font-size:.6rem;">(HT ${hshi}–${ashi})</span>`:''}</span>`
+      ? `<span class="score-status-badge badge-ft">✅ FT${htStr}</span>`
       : `<span class="score-status-badge badge-upcoming">${kickoffStr}</span>`;
 
     const scoreHtml = (status==='ft'||status==='live')
       ? `<div class="score-nums">
-          <div class="score-num${status==='live'?' live-num':''}">${hs}</div>
-          <div class="score-sep">–</div>
-          <div class="score-num${status==='live'?' live-num':''}">${as_}</div>
-        </div>`
-      : `<div class="score-vs">${kickoffStr||'vs'}</div>`;
+           <div class="score-num${status==='live'?' live-num':''}">${hs}</div>
+           <div class="score-sep">–</div>
+           <div class="score-num${status==='live'?' live-num':''}">${as_}</div>
+         </div>`
+      : `<div class="score-vs">${kickoffStr}</div>`;
 
     return `<div class="score-card status-${status}">
       <div class="score-card-header"><span class="score-round">${group}</span>${badge}</div>
@@ -1517,7 +1524,7 @@ function renderScores(){
         <div class="score-team"><div class="score-flag">${flag(away)}</div><div class="score-team-name">${away}</div></div>
       </div>
       ${scorers}
-      <div class="score-card-footer"><span class="score-venue">${venueStr}</span></div>
+      <div class="score-card-footer"><span class="score-venue">${ground}</span></div>
     </div>`;
   }).join('');
 }
