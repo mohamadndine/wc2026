@@ -328,7 +328,6 @@ tbody td:nth-child(2){text-align:left;}
 
 <!-- SCORES SECTION (outside main, full page) -->
 <div id="scores-section" style="display:none;max-width:960px;margin:0 auto;padding:1.25rem .9rem 5rem;">
-  <button class="back-btn" onclick="showWelcome()">← Back to Home</button>
   <div class="scores-top-bar">
     <h2>⚽ Live Scores</h2>
     <div class="live-dot" id="live-dot" style="display:none"></div>
@@ -711,6 +710,9 @@ function applyPlayerNavLock(){
 
 function playerPanelsHTML(){
   return `
+  <div style="padding-bottom:.5rem;">
+    <button class="back-btn" onclick="showWelcome()">← Back to Home</button>
+  </div>
   <div id="tab-pq" class="panel"></div>
   <div id="tab-pt" class="panel"></div>
   <div id="tab-pk" class="panel"></div>
@@ -1622,14 +1624,16 @@ function copyText(text,btn){
 }
 
 init();
-// Header title always navigates back to welcome
-document.getElementById('site-title').addEventListener('click', function(){ showWelcome(); });
+
 </script>
 </body>
 </html>// ══ LIVE SCORES ══════════════════════════════════════════════════════════
-// Source: openfootball/worldcup.json (free, no auth, no CORS issues)
-// Scores computed by counting goals1/goals2 arrays — reliable even before
-// the repo adds explicit score fields.
+// openfootball/worldcup.json — free, no auth, no CORS
+// Schema (2026): { rounds: [{ name, matches: [{ num, date, time,
+//   team1:{name,code}, team2:{name,code},
+//   score1, score2, score1i, score2i,
+//   goals1:[{name,minute,offset}], goals2:[...],
+//   group, stadium:{name}, city, timezone }] }] }
 const OF_URL = 'https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
 let scoresData=[], scoreFilter='all', scoreRefreshTimer=null;
 
@@ -1650,34 +1654,46 @@ const FLAGS={
 };
 function flag(n){ return FLAGS[n]||'🏳️'; }
 
-// Parse "13:00 UTC-6" → UTC Date
+// Parse "18:00 UTC+3" or "13:00 UTC-6" → UTC Date
 function parseMatchDate(dateStr, timeStr){
   if(!dateStr) return null;
   try{
-    const t = timeStr||'12:00 UTC+0';
+    const t = (timeStr||'12:00 UTC+0');
     const sp = t.lastIndexOf(' ');
-    const hhmm = t.substring(0, sp);
-    const utcRaw = t.substring(sp+1);
-    const offset = parseInt(utcRaw.replace('UTC',''))||0;
-    const [hh,mm] = hhmm.split(':').map(Number);
-    const d = new Date(dateStr+'T00:00:00Z');
+    const hhmm = t.substring(0, sp).trim();
+    const utcRaw = t.substring(sp+1).trim(); // "UTC+3" or "UTC-6"
+    const offset = parseInt(utcRaw.replace('UTC','')) || 0;
+    const [hh, mm] = hhmm.split(':').map(Number);
+    const d = new Date(dateStr + 'T00:00:00Z');
     d.setUTCHours(hh - offset, mm, 0, 0);
     return d;
-  } catch(e){ return new Date(dateStr+'T12:00:00Z'); }
+  } catch(e){ return new Date(dateStr + 'T12:00:00Z'); }
 }
 
+// Determine status:
+// 'ft'       → score1/score2 fields present in JSON (confirmed result)
+// 'ft_goals' → computed from goals arrays (repo not yet updated score fields)
+// 'live'     → kickoff passed, within 115 min window
+// 'upcoming' → future
 function getStatus(m){
-  // If explicit score fields are present (future API update), use them
-  if(m.score1!=null && m.score2!=null) return 'ft';
-  // If goals arrays are populated, match is finished
-  if((m.goals1||[]).length>0||(m.goals2||[]).length>0) return 'ft';
-  // Check time
+  if(m.score1 != null && m.score2 != null) return 'ft';
+  const g1 = m.goals1||[], g2 = m.goals2||[];
+  if(g1.length > 0 || g2.length > 0) return 'ft_goals';
   const mu = parseMatchDate(m.date, m.time);
   if(!mu) return 'upcoming';
-  const diff = (Date.now()-mu.getTime())/60000;
-  if(diff >= 115) return 'ft'; // 115+ min since kickoff → treat as finished
+  const diff = (Date.now() - mu.getTime()) / 60000;
+  if(diff >= 115) return 'live'; // treat as live/just ended until repo updates
   if(diff >= 0)   return 'live';
   return 'upcoming';
+}
+
+// Get display scores — from explicit fields OR count goals
+function getScores(m){
+  const g1 = m.goals1||[], g2 = m.goals2||[];
+  const s1 = m.score1 != null ? m.score1 : g1.length;
+  const s2 = m.score2 != null ? m.score2 : g2.length;
+  const played = m.score1 != null || m.score2 != null || g1.length > 0 || g2.length > 0;
+  return { s1, s2, played };
 }
 
 function showScores(){
@@ -1706,35 +1722,47 @@ async function fetchScores(){
   if(!grid) return;
   if(lbl) lbl.textContent='Refreshing…';
   try{
-    const r = await fetch(OF_URL+'?t='+Date.now());
-    if(!r.ok) throw new Error('HTTP '+r.status);
+    const r = await fetch(OF_URL + '?t=' + Date.now());
+    if(!r.ok) throw new Error('HTTP ' + r.status);
     const json = await r.json();
-    scoresData = (json.matches||[]).map(m=>{
-      const g1 = m.goals1||[];
-      const g2 = m.goals2||[];
-      // Compute score from goals if explicit fields absent
-      const s1 = m.score1!=null ? m.score1 : g1.length;
-      const s2 = m.score2!=null ? m.score2 : g2.length;
-      // Mark as played if goals exist OR explicit score present
-      const played = m.score1!=null || m.score2!=null || g1.length>0 || g2.length>0;
+
+    // 2026 schema has ROUNDS containing matches — flatten them
+    const allMatches = [];
+    if(Array.isArray(json.rounds)){
+      for(const round of json.rounds){
+        for(const m of (round.matches||[])){
+          allMatches.push({ ...m, _roundName: round.name });
+        }
+      }
+    } else if(Array.isArray(json.matches)){
+      // fallback if structure changes
+      allMatches.push(...json.matches);
+    }
+
+    scoresData = allMatches.map(m => {
+      // team1/team2 can be object {name,code} or plain string
+      const t1 = typeof m.team1 === 'string' ? m.team1 : (m.team1?.name || '?');
+      const t2 = typeof m.team2 === 'string' ? m.team2 : (m.team2?.name || '?');
+      const tz = m.timezone || 'UTC+0';
       return {
-        date: m.date,
-        time: m.time,
-        group: m.group||m.round||'',
-        ground: m.ground||'',
-        team1: typeof m.team1==='string'?m.team1:(m.team1?.name||'?'),
-        team2: typeof m.team2==='string'?m.team2:(m.team2?.name||'?'),
-        score1: played ? s1 : null,
-        score2: played ? s2 : null,
-        score1i: m.score1i!=null?m.score1i:null,
-        score2i: m.score2i!=null?m.score2i:null,
-        goals1: g1,
-        goals2: g2,
+        date:   m.date,
+        time:   m.time ? m.time + ' ' + tz : null,
+        group:  m.group || m._roundName || '',
+        ground: m.stadium?.name || m.city || '',
+        team1:  t1,
+        team2:  t2,
+        score1: m.score1 != null ? m.score1 : null,
+        score2: m.score2 != null ? m.score2 : null,
+        score1i: m.score1i != null ? m.score1i : null,
+        score2i: m.score2i != null ? m.score2i : null,
+        goals1: m.goals1 || [],
+        goals2: m.goals2 || [],
       };
     });
+
     renderScores();
-    if(lbl) lbl.textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-  }catch(e){
+    if(lbl) lbl.textContent = 'Updated ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  } catch(e){
     if(grid) grid.innerHTML=`<div class="no-matches"><div class="nm-icon">📡</div>
       <p style="color:rgba(255,255,255,.5);font-size:.85rem;">Could not load scores.<br>${e.message}</p>
       <button class="refresh-btn" style="margin:.75rem auto 0;" onclick="fetchScores()">Try again</button></div>`;
@@ -1742,37 +1770,41 @@ async function fetchScores(){
   }
 }
 
-function setScoreFilter(f,btn){
-  scoreFilter=f;
+function setScoreFilter(f, btn){
+  scoreFilter = f;
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   renderScores();
 }
 
 function renderScores(){
-  const grid=document.getElementById('scores-grid');
+  const grid = document.getElementById('scores-grid');
   if(!grid) return;
-  const liveDot=document.getElementById('live-dot');
-  const now=new Date();
-  const todayStr=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const liveDot = document.getElementById('live-dot');
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
-  let matches=[...scoresData];
-  if(scoreFilter==='live')          matches=matches.filter(m=>getStatus(m)==='live');
-  else if(scoreFilter==='ft')       matches=matches.filter(m=>getStatus(m)==='ft');
-  else if(scoreFilter==='upcoming') matches=matches.filter(m=>getStatus(m)==='upcoming');
-  else if(scoreFilter==='today')    matches=matches.filter(m=>m.date===todayStr);
+  let matches = [...scoresData];
+  const isDone = m => { const s=getStatus(m); return s==='ft'||s==='ft_goals'; };
+  const isLive = m => getStatus(m)==='live';
 
-  const ord={live:0,ft:1,upcoming:2};
+  if(scoreFilter==='live')          matches = matches.filter(m=>isLive(m));
+  else if(scoreFilter==='ft')       matches = matches.filter(m=>isDone(m));
+  else if(scoreFilter==='upcoming') matches = matches.filter(m=>getStatus(m)==='upcoming');
+  else if(scoreFilter==='today')    matches = matches.filter(m=>m.date===todayStr);
+
+  const ord = { live:0, ft:1, ft_goals:1, upcoming:2 };
   matches.sort((a,b)=>{
     const sa=ord[getStatus(a)]??2, sb=ord[getStatus(b)]??2;
     if(sa!==sb) return sa-sb;
     const da=parseMatchDate(a.date,a.time)||0;
     const db=parseMatchDate(b.date,b.time)||0;
-    return sa===1 ? db-da : da-db; // ft: newest first; upcoming: soonest first
+    // finished: newest first; upcoming: soonest first
+    return isDone(a) ? db-da : da-db;
   });
 
-  const hasLive=scoresData.some(m=>getStatus(m)==='live');
-  if(liveDot) liveDot.style.display=hasLive?'block':'none';
+  const hasLive = scoresData.some(m=>isLive(m));
+  if(liveDot) liveDot.style.display = hasLive?'block':'none';
 
   if(!matches.length){
     grid.innerHTML=`<div class="no-matches"><div class="nm-icon">🕐</div>
@@ -1780,57 +1812,62 @@ function renderScores(){
     return;
   }
 
-  grid.innerHTML=matches.map(m=>{
-    const status=getStatus(m);
-    const home=m.team1||'?';
-    const away=m.team2||'?';
-    const hs=m.score1;
-    const as_=m.score2;
-    const hshi=m.score1i;
-    const ashi=m.score2i;
-    const group=m.group||'';
-    const ground=m.ground||'';
-    const mu=parseMatchDate(m.date,m.time);
-    const kickoffStr=mu?mu.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
-    const g1=m.goals1||[];
-    const g2=m.goals2||[];
-    const sh=g1.map(g=>`<div class="team-scorer"><strong>${g.name}</strong>${g.minute?' '+g.minute+"'":''}${g.offset?'+'+g.offset:''}</div>`).join('');
-    const sa2=g2.map(g=>`<div class="team-scorer"><strong>${g.name}</strong>${g.minute?' '+g.minute+"'":''}${g.offset?'+'+g.offset:''}</div>`).join('');
-    const htNote=hshi!=null?` <span style="opacity:.5;font-size:.58rem;">(HT ${hshi}–${ashi})</span>`:'';
-    const badge=
-      status==='live'  ?`<span class="score-status-badge badge-live">🔴 LIVE</span>`:
-      status==='ft'    ?`<span class="score-status-badge badge-ft">✅ FT${htNote}</span>`:
-                        `<span class="score-status-badge badge-upcoming">${kickoffStr}</span>`;
+  grid.innerHTML = matches.map(m => {
+    const status  = getStatus(m);
+    const {s1, s2, played} = getScores(m);
+    const home    = m.team1||'?';
+    const away    = m.team2||'?';
+    const hshi    = m.score1i;
+    const ashi    = m.score2i;
+    const group   = m.group||'';
+    const ground  = m.ground||'';
+
+    const mu = parseMatchDate(m.date, m.time);
+    const kickoffStr = mu ? mu.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+
+    const g1 = m.goals1||[];
+    const g2 = m.goals2||[];
+    const sh  = g1.map(g=>`<div class="team-scorer"><strong>${g.name}</strong>${g.minute?' '+g.minute+"'":''}${g.offset?'+'+g.offset:''}</div>`).join('');
+    const sa2 = g2.map(g=>`<div class="team-scorer"><strong>${g.name}</strong>${g.minute?' '+g.minute+"'":''}${g.offset?'+'+g.offset:''}</div>`).join('');
+
+    const htNote = hshi!=null ? ` <span style="opacity:.5;font-size:.58rem;">(HT ${hshi}–${ashi})</span>` : '';
+    const isFinished = status==='ft'||status==='ft_goals';
+    const badge =
+      status==='live'       ? `<span class="score-status-badge badge-live">🔴 LIVE</span>` :
+      isFinished            ? `<span class="score-status-badge badge-ft">✅ FT${htNote}</span>` :
+                              `<span class="score-status-badge badge-upcoming">${kickoffStr}</span>`;
+
     let center;
-    if(status==='ft' && hs!=null && as_!=null){
-      center=`<div class="score-center">
-        <div class="score-result">${hs} – ${as_}</div>
-        ${hshi!=null?`<div class="score-vs-time">HT ${hshi}–${ashi}</div>`:''}
+    if(isFinished){
+      center = `<div class="score-center">
+        <div class="score-result">${s1} – ${s2}</div>
+        ${hshi!=null ? `<div class="score-vs-time">HT ${hshi}–${ashi}</div>` : ''}
       </div>`;
     } else if(status==='live'){
-      center=`<div class="score-center">
-        <div class="score-result live-score">${hs!=null?hs+' – '+as_:'LIVE'}</div>
+      center = `<div class="score-center">
+        <div class="score-result live-score">LIVE</div>
         <div class="score-vs-time" style="color:var(--red);">🔴 In progress</div>
       </div>`;
     } else {
-      center=`<div class="score-center">
+      center = `<div class="score-center">
         <div class="score-result tbd">vs</div>
         <div class="score-vs-time">${kickoffStr}</div>
       </div>`;
     }
+
     return `<div class="score-card status-${status}">
       <div class="score-card-header"><span class="score-round">${group}</span>${badge}</div>
       <div class="score-teams">
         <div class="score-team">
           <div class="score-flag">${flag(home)}</div>
           <div class="score-team-name">${home}</div>
-          ${sh?`<div class="team-scorers">${sh}</div>`:''}
+          ${sh ? `<div class="team-scorers">${sh}</div>` : ''}
         </div>
         ${center}
         <div class="score-team">
           <div class="score-flag">${flag(away)}</div>
           <div class="score-team-name">${away}</div>
-          ${sa2?`<div class="team-scorers">${sa2}</div>`:''}
+          ${sa2 ? `<div class="team-scorers">${sa2}</div>` : ''}
         </div>
       </div>
       <div class="score-card-footer"><span class="score-venue">${ground}</span></div>
@@ -1846,7 +1883,23 @@ function copyText(text,btn){
 }
 
 init();
-// Header title always navigates back to welcome
+
+</script>
+</body>
+</html>// ══ LIVE SCORES ══════════════════════════════════════════════════════════
+// Source: openfootball/worldcup.json (free, no auth, no CORS issues)
+// Scores computed by counting goals1/goals2 arrays — reliable even before
+// the repo adds explicit score fields.
+
+// ══ UTILS ═════════════════════════════════════════════════
+function copyText(text,btn){
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig=btn.textContent;btn.textContent='✓';
+    setTimeout(()=>btn.textContent=orig,1800);
+  });
+}
+
+init();
 document.getElementById('site-title').addEventListener('click', function(){ showWelcome(); });
 </script>
 </body>
