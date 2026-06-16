@@ -357,7 +357,7 @@ tbody td:nth-child(2){text-align:left;}
 const GH_OWNER  = 'mohamadndine';
 const GH_REPO   = 'wc2026';
 const DATA_FILE = 'data.json';
-const ADMIN_PASSWORD = 'BrosWorldCup@123';
+const ADMIN_PASSWORD = 'BrosWorldCup26';
 
 // Prediction deadline: June 17 2026 22:00 ET = UTC-4 in summer → 02:00 UTC June 18
 const PREDICTION_DEADLINE = new Date('2026-06-18T02:00:00Z');
@@ -591,7 +591,7 @@ function showWelcome(){
   </div>`);
 }
 
-// ══ HOME (player picker with password) ════════════════════════════════════
+// ══ HOME (player picker — no password) ════════════════════════════════════
 function showHome(){
   document.getElementById('admin-nav').style.display='none';
   document.getElementById('player-nav').style.display='none';
@@ -607,7 +607,7 @@ function showHome(){
   const playerBtns = GD.players.map(p=>{
     const name = typeof p === 'string' ? p : p.name;
     const hasSubmitted = !!GD.predictions[name];
-    return `<button class="player-select-btn" onclick="showPlayerLogin('${name.replace(/'/g,"\\'")}')">
+    return `<button class="player-select-btn" onclick="loginAsPlayer('${name.replace(/'/g,"\\'")}')">
       <div class="avatar">${name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase()}</div>
       <span>${name}</span>
       <span class="status-tag ${hasSubmitted?'status-submitted':'status-pending'}">${hasSubmitted?'✅ Submitted':'Pending'}</span>
@@ -622,67 +622,13 @@ function showHome(){
     <button class="back-btn" style="margin-bottom:.9rem;" onclick="showWelcome()">← Back</button>
     <h2>⚽ Who are you?</h2>
     ${deadlineBanner}
-    <p style="margin-bottom:.9rem;">Select your name then enter your password to access your predictions.</p>
+    <p style="margin-bottom:.9rem;">Select your name to view or enter your predictions.</p>
     <div class="player-select-list">${playerBtns||'<p style="color:var(--gray-mid);font-size:.85rem">No players added yet.</p>'}</div>
     <div style="padding-top:.75rem;border-top:1px solid #eee;">
       <button onclick="showLeaderboard()" class="btn btn-green btn-full">🏆 View Leaderboard</button>
     </div>
     <div class="admin-link"><button onclick="location.hash='admin';showAdminLogin()">Admin access →</button></div>
   </div>`);
-}
-
-function showPlayerLogin(name){
-  const hasPass = GD.playerPasswords && GD.playerPasswords[name];
-  showMain(`<div class="home-card">
-    <h2>👤 ${name}</h2>
-    <p style="margin-bottom:1rem;">${hasPass ? 'Enter your password to access your predictions.' : 'Set a password to protect your predictions.'}</p>
-    <input type="password" id="player-pw-input" placeholder="${hasPass?'Password':'Choose a password'}"
-      style="width:100%;padding:10px 14px;border:1.5px solid #d0d0cc;border-radius:8px;font-family:'Inter',sans-serif;font-size:1rem;margin-bottom:.75rem;"
-      onkeydown="if(event.key==='Enter')submitPlayerLogin('${name.replace(/'/g,"\\'")}')">
-    <button class="btn btn-green btn-full" onclick="submitPlayerLogin('${name.replace(/'/g,"\\'")}')">
-      ${hasPass ? '🔓 Login' : '✅ Set Password & Continue'}
-    </button>
-    <div id="player-login-error" style="margin-top:.5rem;font-size:.8rem;color:var(--red);font-weight:600;"></div>
-    <div style="margin-top:.75rem;">
-      <button class="btn btn-gray btn-full" onclick="showHome()">← Back</button>
-    </div>
-  </div>`);
-  setTimeout(()=>document.getElementById('player-pw-input')?.focus(),100);
-}
-
-async function submitPlayerLogin(name){
-  const pw = document.getElementById('player-pw-input').value;
-  const errEl = document.getElementById('player-login-error');
-  if(!pw){ errEl.textContent='Please enter a password.'; return; }
-
-  if(!GD.playerPasswords) GD.playerPasswords = {};
-  const stored = GD.playerPasswords[name];
-
-  if(!stored){
-    // First time — set the password
-    if(pw.length < 3){ errEl.textContent='Password must be at least 3 characters.'; return; }
-    // Need token to save the password
-    if(!ghToken){
-      const tok = prompt('Enter the game token to save your password:');
-      if(!tok){ errEl.textContent='Token required to save password.'; return; }
-      ghToken = tok.trim();
-      sessionStorage.setItem('gh_token', ghToken);
-    }
-    try {
-      GD = await ghRead();
-      if(!GD.playerPasswords) GD.playerPasswords = {};
-      GD.playerPasswords[name] = pw;
-      await ghWrite(GD);
-      loginAsPlayer(name);
-    } catch(e){
-      errEl.textContent = '❌ Could not save password: ' + e.message;
-      ghToken=''; sessionStorage.removeItem('gh_token');
-    }
-  } else {
-    // Check password
-    if(pw !== stored){ errEl.textContent='❌ Incorrect password.'; return; }
-    loginAsPlayer(name);
-  }
 }
 
 // ══ LEADERBOARD (public) ═══════════════════════════════════════════════════
@@ -1358,55 +1304,29 @@ async function setAdminTWActual(val){
 }
 
 // ══ LIVE SCORES ══════════════════════════════════════════════════════════
-const SCORES_API='https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json';
+// Uses football-data.org free tier — requires a free API key
+// Sign up at https://www.football-data.org/client/register
+// Then set SCORES_API_KEY below
+const SCORES_API_KEY = '5645280b584e4837b26e940542c14414'; // ← replace this
+const WC_2026_ID = 2000; // Competition ID for 2026 World Cup
+
 let scoresData=[],scoreFilter='all',scoreRefreshTimer=null;
 
 const FLAGS={
-  'Mexico':'🇲🇽','South Korea':'🇰🇷','South Africa':'🇿🇦','Czechia':'🇨🇿','Czech Republic':'🇨🇿',
-  'Canada':'🇨🇦','Bosnia-Herzegovina':'🇧🇦','Bosnia and Herzegovina':'🇧🇦','Qatar':'🇶🇦','Switzerland':'🇨🇭',
+  'Mexico':'🇲🇽','South Korea':'🇰🇷','South Africa':'🇿🇦','Czechia':'🇨🇿',
+  'Canada':'🇨🇦','Bosnia and Herzegovina':'🇧🇦','Qatar':'🇶🇦','Switzerland':'🇨🇭',
   'Brazil':'🇧🇷','Morocco':'🇲🇦','Haiti':'🇭🇹','Scotland':'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
-  'USA':'🇺🇸','United States':'🇺🇸','Paraguay':'🇵🇾','Australia':'🇦🇺','Türkiye':'🇹🇷','Turkey':'🇹🇷',
-  'Germany':'🇩🇪','Curaçao':'🇨🇼','Curacao':'🇨🇼','Ivory Coast':'🇨🇮',"Côte d'Ivoire":'🇨🇮','Ecuador':'🇪🇨',
-  'Netherlands':'🇳🇱','Japan':'🇯🇵','Sweden':'🇸🇪','Tunisia':'🇹🇳',
-  'Belgium':'🇧🇪','Egypt':'🇪🇬','Iran':'🇮🇷','New Zealand':'🇳🇿',
-  'Spain':'🇪🇸','Cape Verde':'🇨🇻','Saudi Arabia':'🇸🇦','Uruguay':'🇺🇾',
-  'France':'🇫🇷','Senegal':'🇸🇳','Iraq':'🇮🇶','Norway':'🇳🇴',
+  'USA':'🇺🇸','United States':'🇺🇸','Paraguay':'🇵🇾','Australia':'🇦🇺',
+  'Türkiye':'🇹🇷','Turkey':'🇹🇷','Germany':'🇩🇪','Curaçao':'🇨🇼','Ecuador':'🇪🇨',
+  "Côte d'Ivoire":'🇨🇮','Ivory Coast':'🇨🇮','Netherlands':'🇳🇱','Japan':'🇯🇵',
+  'Sweden':'🇸🇪','Tunisia':'🇹🇳','Belgium':'🇧🇪','Egypt':'🇪🇬','Iran':'🇮🇷',
+  'New Zealand':'🇳🇿','Spain':'🇪🇸','Cape Verde':'🇨🇻','Saudi Arabia':'🇸🇦',
+  'Uruguay':'🇺🇾','France':'🇫🇷','Senegal':'🇸🇳','Iraq':'🇮🇶','Norway':'🇳🇴',
   'Argentina':'🇦🇷','Algeria':'🇩🇿','Austria':'🇦🇹','Jordan':'🇯🇴',
-  'Portugal':'🇵🇹','Congo DR':'🇨🇩','DR Congo':'🇨🇩','Uzbekistan':'🇺🇿','Colombia':'🇨🇴',
-  'England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Croatia':'🇭🇷','Ghana':'🇬🇭','Panama':'🇵🇦',
+  'Portugal':'🇵🇹','DR Congo':'🇨🇩','Congo DR':'🇨🇩','Uzbekistan':'🇺🇿',
+  'Colombia':'🇨🇴','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Croatia':'🇭🇷','Ghana':'🇬🇭','Panama':'🇵🇦',
 };
-function flag(n){ return FLAGS[n]||'🏳️'; }
-
-// Parse "13:00 UTC-6" → UTC Date object
-function parseMatchDate(dateStr, timeStr){
-  if(!dateStr) return null;
-  try{
-    const t=(timeStr||'12:00 UTC+0');
-    const sp=t.lastIndexOf(' ');
-    const hhmm=t.substring(0,sp);
-    const utcRaw=t.substring(sp+1); // e.g. "UTC-6"
-    const offset=parseInt(utcRaw.replace('UTC',''))||0;
-    const [hh,mm]=hhmm.split(':').map(Number);
-    const d=new Date(dateStr+'T00:00:00Z');
-    d.setUTCHours(hh-offset, mm, 0, 0);
-    return d;
-  }catch(e){ return new Date(dateStr+'T12:00:00Z'); }
-}
-
-// Status:
-//  'ft'         → score1+score2 present in API (confirmed result)
-//  'ft_pending' → match end time passed but API not yet updated
-//  'live'       → match start time passed, within 115 min window
-//  'upcoming'   → future
-function getStatus(m){
-  if(m.score1!=null && m.score2!=null) return 'ft';
-  const mu=parseMatchDate(m.date,m.time);
-  if(!mu) return 'upcoming';
-  const diff=(Date.now()-mu.getTime())/60000;
-  if(diff>=115) return 'ft_pending';
-  if(diff>=0)   return 'live';
-  return 'upcoming';
-}
+function flag(n){ return FLAGS[n] || '🏳️'; }
 
 function showScores(){
   document.getElementById('admin-nav').style.display='none';
@@ -1419,105 +1339,247 @@ function showScores(){
   location.hash='scores';
   fetchScores();
   stopScoreRefresh();
-  scoreRefreshTimer=setInterval(fetchScores,120000);
+  scoreRefreshTimer = setInterval(fetchScores, 60000); // refresh every 60s
 }
+
 function stopScoreRefresh(){
-  if(scoreRefreshTimer){clearInterval(scoreRefreshTimer);scoreRefreshTimer=null;}
+  if(scoreRefreshTimer){ clearInterval(scoreRefreshTimer); scoreRefreshTimer=null; }
   const lbl=document.getElementById('refresh-label');
-  if(lbl)lbl.textContent='';
+  if(lbl) lbl.textContent='';
 }
+
 async function fetchScores(){
   const grid=document.getElementById('scores-grid');
   const lbl=document.getElementById('refresh-label');
-  if(!grid)return;
-  if(lbl)lbl.textContent='Refreshing…';
+  if(!grid) return;
+  if(lbl) lbl.textContent='Refreshing…';
+
+  // Check if API key is configured
+  if(SCORES_API_KEY==='YOUR_FOOTBALL_DATA_API_KEY'){
+    grid.innerHTML=`<div class="no-matches">
+      <div class="nm-icon">🔑</div>
+      <p style="color:rgba(255,255,255,.6);font-size:.85rem;line-height:1.6;">
+        <strong style="color:#fff;">API key needed for live scores</strong><br><br>
+        1. Sign up free at <a href="https://www.football-data.org/client/register" target="_blank" style="color:var(--gold)">football-data.org</a><br>
+        2. Copy your API key<br>
+        3. Open <code>index.html</code>, find <code>SCORES_API_KEY</code> near the top of the script and replace <code>YOUR_FOOTBALL_DATA_API_KEY</code> with your key<br>
+        4. Commit the file to GitHub
+      </p>
+    </div>`;
+    if(lbl) lbl.textContent='';
+    return;
+  }
+
   try{
-    const r=await fetch(SCORES_API+'?t='+Date.now());
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    const json=await r.json();
-    scoresData=json.matches||[];
+    const r = await fetch(
+      `https://api.football-data.org/v4/competitions/${WC_2026_ID}/matches`,
+      { headers: { 'X-Auth-Token': SCORES_API_KEY } }
+    );
+    if(r.status===400||r.status===404){
+      // Competition not found yet — fall back to openfootball for fixture list
+      await fetchScoresFallback();
+      return;
+    }
+    if(r.status===403) throw new Error('Invalid API key — check your SCORES_API_KEY');
+    if(!r.ok) throw new Error('API error ' + r.status);
+    const json = await r.json();
+    // football-data.org schema:
+    // { matches: [{ id, utcDate, status, matchday, stage, group,
+    //   homeTeam:{name,shortName}, awayTeam:{name,shortName},
+    //   score:{ fullTime:{home,away}, halfTime:{home,away} },
+    //   goals:[{minute,team:{name},scorer:{name},type}] }] }
+    scoresData = (json.matches||[]).map(m=>({
+      _source: 'fd',
+      date: m.utcDate?.slice(0,10)||'',
+      utcDate: m.utcDate,
+      status: m.status,       // SCHEDULED, LIVE, IN_PLAY, PAUSED, FINISHED, POSTPONED
+      group: m.group || m.stage || `Matchday ${m.matchday}`,
+      ground: m.venue || '',
+      team1: m.homeTeam?.name || m.homeTeam?.shortName || '?',
+      team2: m.awayTeam?.name || m.awayTeam?.shortName || '?',
+      score1: m.score?.fullTime?.home,   // null until played
+      score2: m.score?.fullTime?.away,
+      score1i: m.score?.halfTime?.home,
+      score2i: m.score?.halfTime?.away,
+      goals1: (m.goals||[]).filter(g=>g.team?.name===m.homeTeam?.name).map(g=>({name:g.scorer?.name||'',minute:g.minute})),
+      goals2: (m.goals||[]).filter(g=>g.team?.name===m.awayTeam?.name).map(g=>({name:g.scorer?.name||'',minute:g.minute})),
+      _minute: m.minute || null,
+    }));
     renderScores();
-    if(lbl)lbl.textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    if(lbl) lbl.textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   }catch(e){
-    if(grid)grid.innerHTML=`<div class="no-matches"><div class="nm-icon">📡</div>
-      <p style="color:rgba(255,255,255,.5);font-size:.85rem;">Could not load scores.<br>${e.message}</p>
-      <button class="refresh-btn" style="margin:.75rem auto 0;" onclick="fetchScores()">Try again</button></div>`;
-    if(lbl)lbl.textContent='Failed';
+    // On any error fall back to openfootball fixture list
+    console.warn('football-data.org error:', e.message, '— falling back to openfootball');
+    await fetchScoresFallback(e.message);
   }
 }
+
+// Fallback: openfootball for fixture list (no live scores)
+async function fetchScoresFallback(errMsg){
+  const grid=document.getElementById('scores-grid');
+  const lbl=document.getElementById('refresh-label');
+  try{
+    const r=await fetch('https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json?t='+Date.now());
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const json=await r.json();
+    scoresData=(json.matches||[]).map(m=>({
+      _source:'of',
+      date:m.date,
+      time:m.time,
+      status:'SCHEDULED',
+      group:m.group||m.round||'',
+      ground:m.ground||'',
+      team1:typeof m.team1==='string'?m.team1:(m.team1?.name||'?'),
+      team2:typeof m.team2==='string'?m.team2:(m.team2?.name||'?'),
+      score1:m.score1!=null?m.score1:null,
+      score2:m.score2!=null?m.score2:null,
+      score1i:m.score1i!=null?m.score1i:null,
+      score2i:m.score2i!=null?m.score2i:null,
+      goals1:m.goals1||[],
+      goals2:m.goals2||[],
+    }));
+    renderScores();
+    if(lbl) lbl.textContent='Fixtures loaded (no live scores)';
+  }catch(e2){
+    if(grid) grid.innerHTML=`<div class="no-matches"><div class="nm-icon">📡</div>
+      <p style="color:rgba(255,255,255,.5);font-size:.85rem;">Could not load scores.<br>${errMsg||e2.message}</p>
+      <button class="refresh-btn" style="margin:.75rem auto 0;" onclick="fetchScores()">Try again</button></div>`;
+    if(lbl) lbl.textContent='Failed';
+  }
+}
+
+function getStatusStr(m){
+  // football-data.org statuses
+  if(m._source==='fd'){
+    const s=m.status||'';
+    if(s==='FINISHED') return 'ft';
+    if(s==='IN_PLAY'||s==='LIVE') return 'live';
+    if(s==='PAUSED') return 'ht';
+    // For SCHEDULED: check if time has passed
+    if(m.utcDate){
+      const diff=(Date.now()-new Date(m.utcDate).getTime())/60000;
+      if(diff>=115) return 'ft_pending';
+      if(diff>=0)   return 'live_approx';
+    }
+    return 'upcoming';
+  }
+  // openfootball fallback
+  if(m.score1!=null&&m.score2!=null) return 'ft';
+  const mu=parseMatchDate(m.date,m.time);
+  if(!mu) return 'upcoming';
+  const diff=(Date.now()-mu.getTime())/60000;
+  if(diff>=115) return 'ft_pending';
+  if(diff>=0)   return 'live_approx';
+  return 'upcoming';
+}
+
+function parseMatchDate(dateStr,timeStr){
+  if(!dateStr) return null;
+  try{
+    if(!timeStr) return new Date(dateStr+'T12:00:00Z');
+    const sp=timeStr.lastIndexOf(' ');
+    const hhmm=timeStr.substring(0,sp);
+    const utcRaw=timeStr.substring(sp+1);
+    const offset=parseInt(utcRaw.replace('UTC',''))||0;
+    const [hh,mm]=hhmm.split(':').map(Number);
+    const d=new Date(dateStr+'T00:00:00Z');
+    d.setUTCHours(hh-offset,mm,0,0);
+    return d;
+  }catch(e){ return new Date(dateStr+'T12:00:00Z'); }
+}
+
 function setScoreFilter(f,btn){
   scoreFilter=f;
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  if(btn)btn.classList.add('active');
+  if(btn) btn.classList.add('active');
   renderScores();
 }
+
 function renderScores(){
   const grid=document.getElementById('scores-grid');
-  if(!grid)return;
+  if(!grid) return;
   const liveDot=document.getElementById('live-dot');
   const now=new Date();
   const todayStr=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+
   let matches=[...scoresData];
-  // "ft" filter shows both confirmed and pending (match is over either way)
-  if(scoreFilter==='live')         matches=matches.filter(m=>getStatus(m)==='live');
-  else if(scoreFilter==='ft')      matches=matches.filter(m=>getStatus(m)==='ft'||getStatus(m)==='ft_pending');
-  else if(scoreFilter==='upcoming')matches=matches.filter(m=>getStatus(m)==='upcoming');
+  const isOver=s=>s==='ft'||s==='ft_pending';
+  const isLive=s=>s==='live'||s==='ht'||s==='live_approx';
+
+  if(scoreFilter==='live')         matches=matches.filter(m=>isLive(getStatusStr(m)));
+  else if(scoreFilter==='ft')      matches=matches.filter(m=>isOver(getStatusStr(m)));
+  else if(scoreFilter==='upcoming')matches=matches.filter(m=>getStatusStr(m)==='upcoming');
   else if(scoreFilter==='today')   matches=matches.filter(m=>m.date===todayStr);
-  const ord={live:0,ft:1,ft_pending:2,upcoming:3};
+
+  const ord={live:0,ht:0,live_approx:1,ft:2,ft_pending:3,upcoming:4};
   matches.sort((a,b)=>{
-    const sa=ord[getStatus(a)]??3,sb=ord[getStatus(b)]??3;
-    if(sa!==sb)return sa-sb;
-    const da=parseMatchDate(a.date,a.time)||0,db=parseMatchDate(b.date,b.time)||0;
-    return sa<=2?db-da:da-db;
+    const sa=ord[getStatusStr(a)]??4,sb=ord[getStatusStr(b)]??4;
+    if(sa!==sb) return sa-sb;
+    const da=m=>m.utcDate?new Date(m.utcDate):(parseMatchDate(m.date,m.time)||new Date(0));
+    return isOver(getStatusStr(a))?da(b)-da(a):da(a)-da(b);
   });
-  const hasLive=scoresData.some(m=>getStatus(m)==='live');
-  if(liveDot)liveDot.style.display=hasLive?'block':'none';
+
+  const hasLive=scoresData.some(m=>isLive(getStatusStr(m)));
+  if(liveDot) liveDot.style.display=hasLive?'block':'none';
+
   if(!matches.length){
-    grid.innerHTML=`<div class="no-matches"><div class="nm-icon">🕐</div><p style="color:rgba(255,255,255,.5)">No matches for this filter</p></div>`;
+    grid.innerHTML=`<div class="no-matches"><div class="nm-icon">🕐</div>
+      <p style="color:rgba(255,255,255,.5)">No matches for this filter</p></div>`;
     return;
   }
+
   grid.innerHTML=matches.map(m=>{
-    const status=getStatus(m);
-    const home=typeof m.team1==='string'?m.team1:(m.team1?.name||'?');
-    const away=typeof m.team2==='string'?m.team2:(m.team2?.name||'?');
-    const hs=m.score1!=null?m.score1:null;
-    const as_=m.score2!=null?m.score2:null;
-    const hshi=m.score1i!=null?m.score1i:null;
-    const ashi=m.score2i!=null?m.score2i:null;
-    const group=m.group||m.round||'';
+    const status=getStatusStr(m);
+    const home=m.team1||'?';
+    const away=m.team2||'?';
+    const hs=m.score1;
+    const as_=m.score2;
+    const hshi=m.score1i;
+    const ashi=m.score2i;
+    const group=m.group||'';
     const ground=m.ground||'';
-    const mu=parseMatchDate(m.date,m.time);
-    const kickoffStr=mu?mu.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):m.date||'';
-    // Scorers split by team
+
+    // Kickoff time
+    const kickUTC=m.utcDate?new Date(m.utcDate):(parseMatchDate(m.date,m.time));
+    const kickoffStr=kickUTC?kickUTC.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+
+    // Scorers under each flag
     const g1=m.goals1||[];
     const g2=m.goals2||[];
-    const sh=g1.map(g=>`<div class="team-scorer"><strong>${g.name}</strong> ${g.minute}'${g.offset?'+'+g.offset:''}</div>`).join('');
-    const sa2=g2.map(g=>`<div class="team-scorer"><strong>${g.name}</strong> ${g.minute}'${g.offset?'+'+g.offset:''}</div>`).join('');
-    // Status badge
+    const sh=g1.map(g=>`<div class="team-scorer"><strong>${g.name}</strong> ${g.minute?g.minute+"'":''}${g.offset?'+'+g.offset:''}</div>`).join('');
+    const sa2=g2.map(g=>`<div class="team-scorer"><strong>${g.name}</strong> ${g.minute?g.minute+"'":''}${g.offset?'+'+g.offset:''}</div>`).join('');
+
+    // Badge
     const htNote=hshi!=null?` <span style="opacity:.5;font-size:.58rem;">(HT ${hshi}–${ashi})</span>`:'';
-    const badge=status==='live'
-      ?`<span class="score-status-badge badge-live">🔴 LIVE</span>`
+    const minBadge=m._minute?` ${m._minute}'`:'';
+    const badge=
+      status==='live'||status==='live_approx'
+        ?`<span class="score-status-badge badge-live">🔴 LIVE${minBadge}</span>`
+      :status==='ht'
+        ?`<span class="score-status-badge badge-ht">⏸ HT</span>`
       :status==='ft'
-      ?`<span class="score-status-badge badge-ft">✅ FT${htNote}</span>`
+        ?`<span class="score-status-badge badge-ft">✅ FT${htNote}</span>`
       :status==='ft_pending'
-      ?`<span class="score-status-badge" style="background:#e8f0fe;color:#1565c0;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:10px;">⏳ Ended</span>`
-      :`<span class="score-status-badge badge-upcoming">${kickoffStr}</span>`;
-    // Centre score
+        ?`<span class="score-status-badge" style="background:#e8f0fe;color:#1565c0;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:10px;">⏳ Ended</span>`
+        :`<span class="score-status-badge badge-upcoming">${kickoffStr}</span>`;
+
+    // Centre: score or vs
     let center;
-    if(status==='ft'&&hs!=null&&as_!=null){
+    const isPlayedStatus=status==='ft'||(status==='live'&&hs!=null)||(status==='ht'&&hs!=null);
+    if(isPlayedStatus && hs!=null && as_!=null){
       center=`<div class="score-center">
-        <div class="score-result">${hs} – ${as_}</div>
+        <div class="score-result${status==='live'||status==='ht'?' live-score':''}">${hs} – ${as_}</div>
         ${hshi!=null?`<div class="score-vs-time">HT ${hshi}–${ashi}</div>`:''}
       </div>`;
-    } else if(status==='live'){
+    } else if(status==='live'||status==='live_approx'){
       center=`<div class="score-center">
-        <div class="score-result live-score">${hs!=null?hs+' – '+as_:'LIVE'}</div>
+        <div class="score-result live-score">LIVE</div>
         <div class="score-vs-time" style="color:var(--red);">🔴 In progress</div>
       </div>`;
     } else if(status==='ft_pending'){
       center=`<div class="score-center">
         <div class="score-result tbd">? – ?</div>
-        <div class="score-vs-time">Score updating…</div>
+        <div class="score-vs-time">Score pending…</div>
       </div>`;
     } else {
       center=`<div class="score-center">
@@ -1525,6 +1587,7 @@ function renderScores(){
         <div class="score-vs-time">${kickoffStr}</div>
       </div>`;
     }
+
     return `<div class="score-card status-${status}">
       <div class="score-card-header"><span class="score-round">${group}</span>${badge}</div>
       <div class="score-teams">
