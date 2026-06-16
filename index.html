@@ -292,7 +292,7 @@ tbody td:nth-child(2){text-align:left;}
 <body>
 <header>
   <div class="header-badge">USA · Canada · Mexico · 2026</div>
-  <h1 onclick="showWelcome()" title="Back to home">⚽ World Cup <span>2026</span></h1>
+  <h1 id="site-title" title="Back to home">⚽ World Cup <span>2026</span></h1>
   <p id="header-sub">Prediction Game</p>
   <div id="player-badge" class="player-badge" style="display:none"></div>
 </header>
@@ -537,6 +537,9 @@ async function init(){
     </div>`);
     return;
   }
+  // Wire header title click → welcome page
+  document.getElementById('site-title').addEventListener('click', showWelcome);
+
   const hash = location.hash;
   if(hash === '#admin'){
     showAdminLogin();
@@ -1307,7 +1310,7 @@ async function setAdminTWActual(val){
 // Uses football-data.org free tier — requires a free API key
 // Sign up at https://www.football-data.org/client/register
 // Then set SCORES_API_KEY below
-const SCORES_API_KEY = '5645280b584e4837b26e940542c14414'; // ← replace this
+const SCORES_API_KEY = '5645280b584e4837b26e940542c14414';
 const WC_2026_ID = 2000; // Competition ID for 2026 World Cup
 
 let scoresData=[],scoreFilter='all',scoreRefreshTimer=null;
@@ -1362,7 +1365,7 @@ async function fetchScores(){
         <strong style="color:#fff;">API key needed for live scores</strong><br><br>
         1. Sign up free at <a href="https://www.football-data.org/client/register" target="_blank" style="color:var(--gold)">football-data.org</a><br>
         2. Copy your API key<br>
-        3. Open <code>index.html</code>, find <code>SCORES_API_KEY</code> near the top of the script and replace <code>YOUR_FOOTBALL_DATA_API_KEY</code> with your key<br>
+        3. Open <code>index.html</code>, find <code>SCORES_API_KEY</code> near the top of the script and paste your key<br>
         4. Commit the file to GitHub
       </p>
     </div>`;
@@ -1370,46 +1373,51 @@ async function fetchScores(){
     return;
   }
 
+  // football-data.org blocks direct browser requests (CORS).
+  // We route through allorigins.win which proxies the request server-side.
+  const targetUrl = `https://api.football-data.org/v4/competitions/WC/matches?season=2026`;
+  const proxyUrl  = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+
   try{
-    const r = await fetch(
-      `https://api.football-data.org/v4/competitions/${WC_2026_ID}/matches`,
-      { headers: { 'X-Auth-Token': SCORES_API_KEY } }
-    );
-    if(r.status===400||r.status===404){
-      // Competition not found yet — fall back to openfootball for fixture list
-      await fetchScoresFallback();
-      return;
-    }
-    if(r.status===403) throw new Error('Invalid API key — check your SCORES_API_KEY');
-    if(!r.ok) throw new Error('API error ' + r.status);
-    const json = await r.json();
+    const r = await fetch(proxyUrl);
+    if(!r.ok) throw new Error('Proxy error ' + r.status);
+    const wrapper = await r.json();
+    // allorigins wraps the response in { contents: "...", status: {...} }
+    if(!wrapper.contents) throw new Error('Empty proxy response');
+
+    let json;
+    try { json = JSON.parse(wrapper.contents); }
+    catch(e){ throw new Error('Could not parse API response'); }
+
+    if(json.errorCode===403||json.message?.includes('403')) throw new Error('Invalid or unauthorised API key');
+    if(json.errorCode) throw new Error(json.message||'API error');
+
     // football-data.org schema:
-    // { matches: [{ id, utcDate, status, matchday, stage, group,
-    //   homeTeam:{name,shortName}, awayTeam:{name,shortName},
-    //   score:{ fullTime:{home,away}, halfTime:{home,away} },
-    //   goals:[{minute,team:{name},scorer:{name},type}] }] }
+    // matches[].utcDate, .status (SCHEDULED/IN_PLAY/PAUSED/FINISHED),
+    // .homeTeam.name, .awayTeam.name,
+    // .score.fullTime.home, .score.fullTime.away,
+    // .score.halfTime.home, .score.halfTime.away
+    // Note: .goals array may be empty on free tier — scorers may not be available
     scoresData = (json.matches||[]).map(m=>({
       _source: 'fd',
-      date: m.utcDate?.slice(0,10)||'',
+      date: (m.utcDate||'').slice(0,10),
       utcDate: m.utcDate,
-      status: m.status,       // SCHEDULED, LIVE, IN_PLAY, PAUSED, FINISHED, POSTPONED
-      group: m.group || m.stage || `Matchday ${m.matchday}`,
+      status: m.status,
+      group: m.group || m.stage || (m.matchday?`Matchday ${m.matchday}`:''),
       ground: m.venue || '',
-      team1: m.homeTeam?.name || m.homeTeam?.shortName || '?',
-      team2: m.awayTeam?.name || m.awayTeam?.shortName || '?',
-      score1: m.score?.fullTime?.home,   // null until played
-      score2: m.score?.fullTime?.away,
-      score1i: m.score?.halfTime?.home,
-      score2i: m.score?.halfTime?.away,
-      goals1: (m.goals||[]).filter(g=>g.team?.name===m.homeTeam?.name).map(g=>({name:g.scorer?.name||'',minute:g.minute})),
-      goals2: (m.goals||[]).filter(g=>g.team?.name===m.awayTeam?.name).map(g=>({name:g.scorer?.name||'',minute:g.minute})),
-      _minute: m.minute || null,
+      team1: m.homeTeam?.shortName || m.homeTeam?.name || '?',
+      team2: m.awayTeam?.shortName || m.awayTeam?.name || '?',
+      score1: m.score?.fullTime?.home ?? null,
+      score2: m.score?.fullTime?.away ?? null,
+      score1i: m.score?.halfTime?.home ?? null,
+      score2i: m.score?.halfTime?.away ?? null,
+      goals1: (m.goals||[]).filter(g=>g.team?.id===m.homeTeam?.id).map(g=>({name:g.scorer?.name||'',minute:g.minute||''})),
+      goals2: (m.goals||[]).filter(g=>g.team?.id===m.awayTeam?.id).map(g=>({name:g.scorer?.name||'',minute:g.minute||''})),
     }));
     renderScores();
     if(lbl) lbl.textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   }catch(e){
-    // On any error fall back to openfootball fixture list
-    console.warn('football-data.org error:', e.message, '— falling back to openfootball');
+    console.warn('Scores API error:', e.message, '— falling back to fixture list');
     await fetchScoresFallback(e.message);
   }
 }
@@ -1449,17 +1457,18 @@ async function fetchScoresFallback(errMsg){
 }
 
 function getStatusStr(m){
-  // football-data.org statuses
   if(m._source==='fd'){
     const s=m.status||'';
     if(s==='FINISHED') return 'ft';
-    if(s==='IN_PLAY'||s==='LIVE') return 'live';
-    if(s==='PAUSED') return 'ht';
-    // For SCHEDULED: check if time has passed
-    if(m.utcDate){
-      const diff=(Date.now()-new Date(m.utcDate).getTime())/60000;
-      if(diff>=115) return 'ft_pending';
-      if(diff>=0)   return 'live_approx';
+    if(s==='IN_PLAY')  return 'live';
+    if(s==='PAUSED')   return 'ht';
+    if(s==='TIMED'||s==='SCHEDULED'){
+      if(m.utcDate){
+        const diff=(Date.now()-new Date(m.utcDate).getTime())/60000;
+        if(diff>=115) return 'ft_pending';
+        if(diff>=0)   return 'live_approx';
+      }
+      return 'upcoming';
     }
     return 'upcoming';
   }
