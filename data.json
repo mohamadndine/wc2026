@@ -422,14 +422,14 @@
         ],
         "D": [
           "USA",
-          "Türkiye"
+          "Australia"
         ],
         "E": [
           "Germany",
-          "Ecuador"
+          "Ivory Coast"
         ],
         "F": [
-          "Netherlands",
+          "Sweden",
           "Japan"
         ],
         "G": [
@@ -437,20 +437,20 @@
           "Egypt"
         ],
         "H": [
-          "Spain",
-          "Uruguay"
+          "Uruguay",
+          "Spain"
         ],
         "I": [
           "France",
-          "Senegal"
+          "Norway"
         ],
         "J": [
           "Argentina",
-          "Algeria"
+          "Austria"
         ],
         "K": [
-          "Portugal",
-          "Colombia"
+          "Colombia",
+          "Portugal"
         ],
         "L": [
           "England",
@@ -459,13 +459,14 @@
       },
       "thirds": {
         "A": "Czechia",
-        "B": "Bosnia-Herzegovina",
+        "B": "",
         "C": "Scotland",
-        "D": "Paraguay",
-        "E": "Ivory Coast",
-        "F": "Sweden",
+        "D": "Türkiye",
+        "E": "Ecuador",
+        "F": "Netherlands",
         "G": "Iran",
-        "H": "Saudi Arabia"
+        "H": "Saudi Arabia",
+        "L": "Ghana"
       },
       "ko": {},
       "tw": ""
