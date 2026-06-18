@@ -505,11 +505,14 @@ function showHome(){
     return '<button class="player-btn" onclick="loginAs(\''+name.replace(/'/g,"\\'")+'\')">'+'<div class="avatar">'+initials(name)+'</div><span>'+name+'</span>'+'<span class="stag '+(sub?'submitted':'pending')+'">'+(sub?'✅ Submitted':'Pending')+'</span></button>';
   }).join('');
   showMain('<div class="home-card">'+
-    '<button class="back-btn" onclick="showWelcome()">← Back to Home</button>'+
+    '<button onclick="showWelcome()" style="display:inline-flex;align-items:center;gap:5px;background:none;border:1px solid #d0d0cc;color:var(--gray-mid);padding:.3rem .85rem;border-radius:20px;font-size:.75rem;font-weight:600;cursor:pointer;margin-bottom:.9rem;font-family:Inter,sans-serif;">← Back to Home</button>'+
     '<h2>⚽ Who are you?</h2>'+banner+
     '<p style="margin-bottom:.9rem">Select your name to view or enter your predictions.</p>'+
     btns+
-    '<div style="padding-top:.75rem;border-top:1px solid #eee;margin-top:.5rem"><button onclick="showLB()" class="btn btn-green btn-full">🏆 View Leaderboard</button></div>'+
+    '<div style="padding-top:.75rem;border-top:1px solid #eee;margin-top:.5rem;display:flex;flex-direction:column;gap:8px">'+
+    '<button onclick="showLB()" class="btn btn-green btn-full">🏆 View Leaderboard</button>'+
+    '<button onclick="showSummary()" class="btn btn-full" style="background:#5b21b6;color:#fff">📋 Predictions Summary</button>'+
+    '</div>'+
     '<div class="admin-link"><button onclick="location.hash=\'admin\';showAdminLogin()">Admin access →</button></div>'+
     '</div>');
 }
@@ -754,6 +757,100 @@ function showLB(){
     html+='<tr><td><span class="rank-badge '+cls+'">'+medal+'</span></td><td class="pname">'+p.name+tag+'</td><td>'+p.qual+'</td><td>'+p.thirds+'</td><td>'+p.ko+'</td><td>'+p.tw+'</td><td class="tpts">'+p.total+'</td></tr>';
   });
   html+='</tbody></table></div>';
+  showMain(html);
+}
+
+// ─── PREDICTIONS SUMMARY ──────────────────────────────────────────────────
+function showSummary(){
+  el('anav').style.display='none';el('pnav').style.display='none';el('sticky').style.display='none';
+  el('scores-page').style.display='none';el('main').style.display='block';stopRefresh();
+
+  var players=GD.players.map(pName);
+
+  // ── Group Qualifiers table ──
+  var qualHtml='<div style="background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:1.25rem">'+
+    '<div style="background:var(--green);padding:.65rem 1rem"><h3 style="font-family:Bebas Neue,sans-serif;font-size:1.15rem;color:#fff;letter-spacing:1px">🎯 Group Qualifiers</h3></div>'+
+    '<div style="overflow-x:auto"><table style="min-width:500px"><thead><tr>'+
+    '<th style="text-align:left;padding-left:.9rem">Group</th>';
+  players.forEach(function(n){qualHtml+='<th>'+n+'</th>';});
+  qualHtml+='</tr></thead><tbody>';
+  GK.forEach(function(g,gi){
+    var actual=GD.qualActual[g]||[];
+    var bg=gi%2===0?'#fff':'#f9f9f7';
+    qualHtml+='<tr style="background:'+bg+'"><td style="padding:7px .9rem;font-weight:700;color:var(--green);font-size:.8rem">Group '+g+'<div style="font-size:.65rem;font-weight:400;color:var(--gray-mid)">'+GROUPS[g].join(', ')+'</div></td>';
+    players.forEach(function(name){
+      var preds=((GD.predictions[name]||{}).qual||{})[g]||[];
+      var cell='';
+      [0,1].forEach(function(idx){
+        var pick=preds[idx]||'';
+        var isCorrect=pick&&actual.some(function(a){return a&&pick&&a.toLowerCase()===pick.toLowerCase();});
+        var isWrong=pick&&actual.length>0&&!isCorrect;
+        var col=isCorrect?'#1a6b3c':isWrong?'#c62828':'var(--gray-dark)';
+        var bg2=isCorrect?'#d4edda':isWrong?'#fce8e8':'transparent';
+        cell+='<div style="font-size:.75rem;font-weight:600;color:'+col+';background:'+bg2+';border-radius:4px;padding:1px 5px;margin:1px 0">'+(pick||(actual.length?'—':'?'))+'</div>';
+      });
+      qualHtml+='<td style="padding:5px 8px;text-align:center;vertical-align:top">'+cell+'</td>';
+    });
+    qualHtml+='</tr>';
+  });
+  qualHtml+='</tbody></table></div></div>';
+
+  // ── Best 3rds table ──
+  var thirdsHtml='<div style="background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:1.25rem">'+
+    '<div style="background:var(--purple);padding:.65rem 1rem"><h3 style="font-family:Bebas Neue,sans-serif;font-size:1.15rem;color:#fff;letter-spacing:1px">3️⃣ Best 3rd Place Picks</h3></div>'+
+    '<div style="overflow-x:auto"><table style="min-width:500px"><thead><tr>'+
+    '<th style="text-align:left;padding-left:.9rem">Player</th>'+
+    '<th>Picks (8 teams)</th>'+
+    '</tr></thead><tbody>';
+  players.forEach(function(name,ni){
+    var tP=(GD.predictions[name]||{}).thirds||{};
+    var vals=Array.isArray(tP)?tP:Object.values(tP).filter(function(v){return v;});
+    var actual=GD.thirdsActual||[];
+    var bg=ni%2===0?'#fff':'#f9f9f7';
+    thirdsHtml+='<tr style="background:'+bg+'"><td style="padding:7px .9rem;font-weight:700;font-size:.82rem">'+name+'</td><td style="padding:5px 8px"><div style="display:flex;flex-wrap:wrap;gap:4px">';
+    if(vals.length===0){thirdsHtml+='<span style="font-size:.75rem;color:#aaa">No picks</span>';}
+    else{vals.forEach(function(t){
+      var hit=actual.some(function(a){return a&&t&&a.toLowerCase()===t.toLowerCase();});
+      var hasActual=actual.filter(function(a){return a;}).length>0;
+      var bg2=hasActual?(hit?'#d4edda':'#fce8e8'):'var(--gray-light)';
+      var col=hasActual?(hit?'#1a6b3c':'#c62828'):'var(--gray-dark)';
+      thirdsHtml+='<span style="font-size:.73rem;font-weight:600;padding:2px 8px;border-radius:12px;background:'+bg2+';color:'+col+'">'+t+'</span>';
+    });}
+    thirdsHtml+='</div></td></tr>';
+  });
+  thirdsHtml+='</tbody></table></div></div>';
+
+  // ── Cup Winner table ──
+  var twHtml='<div style="background:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:1.25rem">'+
+    '<div style="background:var(--gold);padding:.65rem 1rem"><h3 style="font-family:Bebas Neue,sans-serif;font-size:1.15rem;color:#3a2600;letter-spacing:1px">🌍 Tournament Winner Picks</h3></div>'+
+    '<div style="overflow-x:auto"><table style="min-width:400px"><thead><tr>'+
+    '<th style="text-align:left;padding-left:.9rem">Player</th>'+
+    '<th>Picked Winner</th><th>Points</th></tr></thead><tbody>';
+  players.forEach(function(name,ni){
+    var tw=(GD.predictions[name]||{}).tw||'';
+    var isCorrect=tw&&GD.twActual&&tw.toLowerCase()===GD.twActual.toLowerCase();
+    var isWrong=tw&&GD.twActual&&!isCorrect;
+    var bg=ni%2===0?'#fff':'#f9f9f7';
+    twHtml+='<tr style="background:'+bg+'">'+
+      '<td style="padding:7px .9rem;font-weight:700;font-size:.82rem">'+name+'</td>'+
+      '<td style="padding:7px 8px;text-align:center;font-weight:600;font-size:.82rem;color:'+(isCorrect?'#1a6b3c':isWrong?'#c62828':'var(--gray-dark)')+'">'+
+        (tw||(GD.twActual?'—':'?'))+'</td>'+
+      '<td style="padding:7px 8px;text-align:center;font-weight:700;color:'+(isCorrect?'#1a6b3c':'var(--gray-mid)')+'">'+
+        (isCorrect?'✅ 10 pts':isWrong?'❌ 0 pts':'—')+'</td></tr>';
+  });
+  if(GD.twActual){twHtml+='<tr style="background:var(--gold-light)"><td style="padding:7px .9rem;font-weight:700;font-size:.8rem;color:var(--gold)">✅ Actual Winner</td><td style="padding:7px 8px;text-align:center;font-weight:700;color:var(--green)">'+GD.twActual+'</td><td></td></tr>';}
+  twHtml+='</tbody></table></div></div>';
+
+  var html='<button class="back-btn" onclick="showHome()">← Back</button>'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap">'+
+    '<h2 style="font-family:Bebas Neue,sans-serif;font-size:1.6rem;color:#fff;letter-spacing:1px">📋 Predictions Summary</h2>'+
+    '<span style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);border-radius:20px;padding:2px 10px;font-size:.72rem">'+players.length+' players</span>'+
+    '</div>'+
+    '<div style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:.75rem 1rem;margin-bottom:1.25rem;font-size:.78rem;color:rgba(255,255,255,.6)">'+
+    '🟢 Green = correct &nbsp;|&nbsp; 🔴 Red = wrong &nbsp;|&nbsp; Grey = result not yet set'+
+    '</div>'+
+    qualHtml+thirdsHtml+twHtml;
+
   showMain(html);
 }
 
